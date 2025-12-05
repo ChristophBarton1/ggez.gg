@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply m-0 p-0 bg-black text-[#f0e6d2] font-inter overflow-x-hidden overflow-y-auto;
+  }
+  
+  html {
+    @apply overflow-x-hidden;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism Styles */
+  .glass-card {
+    background: rgba(9, 20, 40, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(200, 170, 110, 0.3);
+  }
+
+  /* Tech Clip-Path für Input */
+  .clip-tech-input {
+    clip-path: polygon(
+      20px 0, 100% 0, 
+      100% calc(100% - 20px), calc(100% - 20px) 100%, 
+      0 100%, 0 20px
+    );
+  }
+
+  /* Tech Clip-Path für Button */
+  .clip-tech-btn {
+    clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+  }
+
+  /* Tech Clip-Path für Cards */
+  .clip-tech-card {
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%);
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    background: linear-gradient(to right, #fff, #c8aa6e, #fff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Animations */
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-down {
+    animation: fadeInDown 1s ease forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 1s ease forwards;
+  }
+
+  /* Animation Delays */
+  .delay-300 { animation-delay: 0.3s; }
+  .delay-600 { animation-delay: 0.6s; }
+  .delay-900 { animation-delay: 0.9s; }
+}

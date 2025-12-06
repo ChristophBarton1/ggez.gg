@@ -56,6 +56,20 @@ const PLATFORM_IDS = {
 };
 
 /**
+ * Get routing value by region
+ */
+function getRoutingByRegion(region) {
+	return REGION_ROUTING[region] || REGION_ROUTING[region.toUpperCase()] || 'europe';
+}
+
+/**
+ * Get platform by region
+ */
+function getPlatformByRegion(region) {
+	return PLATFORM_IDS[region] || PLATFORM_IDS[region.toUpperCase()] || 'euw1';
+}
+
+/**
  * Get summoner by name and tag
  * @param {string} gameName - Summoner name (e.g. "Hide on bush")
  * @param {string} tagLine - Tag (e.g. "KR1")

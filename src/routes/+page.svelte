@@ -70,6 +70,9 @@
 	<!-- Performance: Preconnect to CDNs -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<!-- Preload critical fonts for LCP -->
+	<link rel="preload" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap" as="style">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap">
 	<link rel="preconnect" href="https://wsrv.nl">
 </svelte:head>
 
@@ -147,8 +150,8 @@
 <div class="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 md:px-8">
 	<div class="text-center w-full max-w-3xl relative z-0">
 		
-		<!-- Brand Title -->
-		<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-4 tracking-[3px] sm:tracking-[5px] uppercase gradient-text opacity-0 animate-fade-in-down"
+		<!-- Brand Title - LCP Element (immediately visible) -->
+		<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-4 tracking-[3px] sm:tracking-[5px] uppercase gradient-text"
 		    style="text-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 			GGEZ.GG
 		</h1>
@@ -160,7 +163,7 @@
 		</div>
 
 		<!-- Search Input Container -->
-		<div class="opacity-0 animate-fade-in-up delay-600 relative z-50">
+		<div class="opacity-0 animate-fade-in-up delay-200 relative z-50">
 			<SummonerSearch />
 		</div>
 

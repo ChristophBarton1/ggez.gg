@@ -81,16 +81,35 @@
 		if (value >= 0) return 'BRONZE';
 		return 'IRON';
 	}
+	
+	function generatePathD(data) {
+		return data.map((point, i) => {
+			const x = 50 + i * 60;
+			const y = getYPosition(point.value, i);
+			return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
+		}).join(' ');
+	}
+	
+	function generateAreaPath(data) {
+		const linePath = data.map((point, i) => {
+			const x = 50 + i * 60;
+			const y = getYPosition(point.value, i);
+			return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
+		}).join(' ');
+		
+		const lastX = 50 + (data.length - 1) * 60;
+		return `${linePath} L ${lastX} 170 L 50 170 Z`;
+	}
 </script>
 
-<div class="rank-history-chart glass-card border border-hex-gold/20 p-6 rounded-lg mt-4">
-	<div class="flex items-center justify-between mb-4">
-		<h3 class="font-cinzel text-hex-gold text-sm uppercase tracking-wider">Rank History</h3>
-		<span class="text-xs text-gray-500 italic">Demo Data</span>
+<div class="rank-history-chart glass-card border border-hex-gold/20 p-6 rounded-lg mt-4 mb-8">
+	<div class="flex items-center justify-between mb-6">
+		<h3 class="font-cinzel text-hex-gold text-base uppercase tracking-wider">Rank History - Last 6 Months</h3>
+		<span class="text-xs text-gray-500 italic">Demo Data - Real tracking coming soon</span>
 	</div>
 	
 	{#if chartData.length > 0}
-		<svg viewBox="0 0 400 180" class="w-full h-40">
+		<svg viewBox="0 0 800 240" class="w-full h-60">
 			<!-- Grid lines -->
 			<line x1="0" y1="20" x2="400" y2="20" stroke="rgba(200,170,110,0.1)" stroke-width="1" />
 			<line x1="0" y1="70" x2="400" y2="70" stroke="rgba(200,170,110,0.1)" stroke-width="1" />
@@ -99,10 +118,7 @@
 			
 			<!-- Line Path -->
 			<path 
-				d="M {#each chartData as point, i}
-					{i === 0 ? '' : 'L '}
-					{50 + i * 60} {getYPosition(point.value, i)}
-				{/each}"
+				d={generatePathD(chartData)}
 				fill="none"
 				stroke="url(#lineGradient)"
 				stroke-width="3"
@@ -112,10 +128,7 @@
 			
 			<!-- Area under curve -->
 			<path 
-				d="M {#each chartData as point, i}
-					{i === 0 ? '' : 'L '}
-					{50 + i * 60} {getYPosition(point.value, i)}
-				{/each} L 350 170 L 50 170 Z"
+				d={generateAreaPath(chartData)}
 				fill="url(#areaGradient)"
 				opacity="0.2"
 			/>

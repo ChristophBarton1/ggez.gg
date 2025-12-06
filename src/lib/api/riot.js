@@ -142,43 +142,91 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
  * @param {string} region - Region code
  * @param {number} count - Number of matches (default 20)
  */
-export async function getMatchHistory(puuid, region = 'EUW', count = 20) {
+export async function getMatchHistory(puuid, region, count = 20) {
 	try {
-		const routing = REGION_ROUTING[region] || 'europe';
+		const routingValue = getRoutingByRegion(region);
 		
 		// Get match IDs
-		const matchListUrl = `https://${routing}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
-		const matchListRes = await fetch(matchListUrl, {
+		const matchIdsUrl = `https://${routingValue}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
+		const matchIdsRes = await fetch(matchIdsUrl, {
 			headers: { 'X-Riot-Token': RIOT_API_KEY }
 		});
-
-		if (!matchListRes.ok) {
-			throw new Error(`Match list API error: ${matchListRes.status}`);
+		
+		if (!matchIdsRes.ok) {
+			console.error('Match IDs API error:', matchIdsRes.status);
+			return [];
 		}
-
-		const matchIds = await matchListRes.json();
-
-		// Get detailed match data (fetch first 5 for performance)
-		const matches = await Promise.all(
-			matchIds.slice(0, 5).map(async (matchId) => {
-				const matchUrl = `https://${routing}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
-				const matchRes = await fetch(matchUrl, {
-					headers: { 'X-Riot-Token': RIOT_API_KEY }
-				});
-				
-				if (matchRes.ok) {
-					return await matchRes.json();
-				}
+		
+		const matchIds = await matchIdsRes.json();
+		
+		// Fetch details for each match
+		const matchPromises = matchIds.map(async (matchId) => {
+			const matchUrl = `https://${routingValue}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
+			const matchRes = await fetch(matchUrl, {
+				headers: { 'X-Riot-Token': RIOT_API_KEY }
+			});
+			
+			if (!matchRes.ok) {
+				console.error(`Match ${matchId} API error:`, matchRes.status);
 				return null;
-			})
-		);
-
+			}
+			
+			return await matchRes.json();
+		});
+		
+		const matches = await Promise.all(matchPromises);
 		return matches.filter(m => m !== null);
-
+		
 	} catch (error) {
 		console.error('Match History Error:', error);
 		return [];
 	}
+}
+
+/**
+ * Analyze recent match performance by champion
+ */
+export function analyzeChampionPerformance(matches, puuid) {
+	const championStats = {};
+	
+	matches.forEach(match => {
+		const participant = match.info.participants.find(p => p.puuid === puuid);
+		if (!participant) return;
+		
+		const championName = participant.championName;
+		
+		if (!championStats[championName]) {
+			championStats[championName] = {
+				championName,
+				championId: participant.championId,
+				games: 0,
+				wins: 0,
+				kills: 0,
+				deaths: 0,
+				assists: 0
+			};
+		}
+		
+		const stats = championStats[championName];
+		stats.games++;
+		if (participant.win) stats.wins++;
+		stats.kills += participant.kills;
+		stats.deaths += participant.deaths;
+		stats.assists += participant.assists;
+	});
+	
+	// Calculate averages and winrates
+	const championArray = Object.values(championStats).map(stats => ({
+		...stats,
+		winrate: (stats.wins / stats.games) * 100,
+		avgKills: stats.kills / stats.games,
+		avgDeaths: stats.deaths / stats.games,
+		avgAssists: stats.assists / stats.games,
+		kda: stats.deaths === 0 ? (stats.kills + stats.assists) : (stats.kills + stats.assists) / stats.deaths
+	}));
+	
+	// Sort by games played
+	return championArray.sort((a, b) => b.games - a.games);
 }
 
 /**

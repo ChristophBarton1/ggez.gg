@@ -1,10 +1,10 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { getSummonerByRiotId, getMatchHistory } from '$lib/api/riot.js';
+	import { getSummonerByRiotId, getMatchHistory, analyzeChampionPerformance } from '$lib/api/riot.js';
 	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
 	import MatchAIChat from '$lib/components/MatchAIChat.svelte';
-	import RankHistoryChart from '$lib/components/RankHistoryChart.svelte';
+	import ChampionPerformanceChart from '$lib/components/ChampionPerformanceChart.svelte';
 	import { getChampionSplashSrcset, getItemIcon, getProfileIcon } from '$lib/utils/imageProxy.js';
 
 	// Route params - reactive
@@ -14,6 +14,7 @@
 
 	let summoner = null;
 	let matches = [];
+	let championPerformance = [];
 	let loading = true;
 	let error = null;
 	let currentBgImage = '';
@@ -48,8 +49,11 @@
 		const matchData = await getMatchHistory(summoner.puuid, reg);
 		matches = matchData;
 
-		// Set initial background
+		// Analyze champion performance
 		if (matches.length > 0) {
+			championPerformance = analyzeChampionPerformance(matches, summoner.puuid);
+			
+			// Set initial background
 			const firstMatch = matches[0];
 			const participant = firstMatch.info.participants.find(p => p.puuid === summoner.puuid);
 			if (participant) {
@@ -177,37 +181,38 @@
 						{#each summoner.ranked as rankedQueue}
 							{@const winrate = ((rankedQueue.wins / (rankedQueue.wins + rankedQueue.losses)) * 100).toFixed(1)}
 							
-							<div class="glass-card border border-hex-gold/20 p-5 rounded-lg hover:border-hex-gold/50 hover:shadow-[0_0_25px_rgba(200,170,110,0.2)] transition-all duration-300">
+							<div class="glass-card border border-hex-gold/20 p-5 rounded-lg hover:border-hex-gold/50 hover:shadow-[0_0_25px_rgba(200,170,110,0.2)] transition-all duration-300 text-center">
 								<!-- Queue Name Header -->
-								<div class="text-xs text-hex-blue uppercase tracking-wide mb-3 font-semibold">
+								<div class="text-xs text-hex-blue uppercase tracking-wide mb-4 font-semibold">
 									{getQueueName(rankedQueue.queueType)}
 								</div>
 								
-								<div class="flex items-center gap-5">
-									<!-- HUGE Tier Icon -->
-									<div class="flex-shrink-0">
+								<!-- Centered Column Layout -->
+								<div class="flex flex-col items-center">
+									<!-- MASSIVE Tier Icon on TOP -->
+									<div class="mb-4 relative w-64 h-64 flex items-center justify-center">
 										<img 
 											src={getTierIcon(rankedQueue.tier)} 
 											alt={rankedQueue.tier}
-											class="w-32 h-32 object-contain drop-shadow-[0_0_20px_rgba(200,170,110,0.5)] hover:scale-110 transition-transform duration-300"
+											class="w-full h-full object-contain scale-150 drop-shadow-[0_0_30px_rgba(200,170,110,0.6)] hover:scale-[1.6] transition-transform duration-300"
 										/>
 									</div>
 									
-									<!-- Rank Info -->
-									<div class="flex-1">
+									<!-- Rank Info BELOW Icon -->
+									<div class="w-full">
 										<!-- Rank & Division - BIG -->
 										<div class="font-cinzel text-white text-2xl mb-2 tracking-wide">
 											{rankedQueue.tier} {rankedQueue.rank}
 										</div>
 										
 										<!-- LP - Emphasized -->
-										<div class="text-base text-gray-300 mb-2">
+										<div class="text-base text-gray-300 mb-3">
 											<span class="text-hex-gold font-bold text-xl">{rankedQueue.leaguePoints}</span>
 											<span class="text-sm text-gray-400 ml-1">LP</span>
 										</div>
 										
 										<!-- Stats Row -->
-										<div class="flex items-center gap-4 text-sm">
+										<div class="flex items-center justify-center gap-4 text-sm">
 											<div class="text-gray-400">
 												<span class="text-green-400 font-semibold">{rankedQueue.wins}W</span>
 												<span class="text-gray-500"> / </span>
@@ -223,16 +228,6 @@
 							</div>
 						{/each}
 					</div>
-					
-					<!-- Rank History Chart -->
-					{#if summoner.ranked && summoner.ranked.length > 0}
-						{@const mainRanked = summoner.ranked[0]}
-						<RankHistoryChart 
-							currentTier={mainRanked.tier}
-							currentRank={mainRanked.rank}
-							currentLP={mainRanked.leaguePoints}
-						/>
-					{/if}
 				</div>
 			{/if}
 		</div>
@@ -240,31 +235,10 @@
 		<!-- RIGHT COLUMN - Content -->
 		<div class="content-col">
 			
-			<!-- Stats Row -->
-			<div class="stats-row grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-6 sm:mb-8">
-				{#if getRankedData()}
-					{@const ranked = getRankedData()}
-					{@const winrate = ((ranked.wins / (ranked.wins + ranked.losses)) * 100).toFixed(0)}
-					
-					<div class="stat-shard glass-card border border-white/10 p-6 clip-tech-card">
-						<h4 class="m-0 mb-2 text-hex-gold text-xs uppercase tracking-wider">Winrate</h4>
-						<div class="text-5xl font-bold text-hex-blue">{winrate}%</div>
-						<div class="text-xs text-gray-500 mt-1">{ranked.wins + ranked.losses} Games</div>
-					</div>
-
-					<div class="stat-shard glass-card border border-white/10 p-6 clip-tech-card">
-						<h4 class="m-0 mb-2 text-hex-gold text-xs uppercase tracking-wider">Rank</h4>
-						<div class="text-3xl font-bold text-white font-cinzel">{ranked.tier} {ranked.rank}</div>
-						<div class="text-xs text-gray-500 mt-1">{ranked.leaguePoints} LP</div>
-					</div>
-
-					<div class="stat-shard glass-card border border-white/10 p-6 clip-tech-card">
-						<h4 class="m-0 mb-2 text-hex-gold text-xs uppercase tracking-wider">Games</h4>
-						<div class="text-5xl font-bold text-white">{ranked.wins + ranked.losses}</div>
-						<div class="text-xs text-gray-500 mt-1">{ranked.wins}W {ranked.losses}L</div>
-					</div>
-				{/if}
-			</div>
+			<!-- Champion Performance Chart at TOP -->
+			{#if championPerformance.length > 0}
+				<ChampionPerformanceChart championStats={championPerformance} />
+			{/if}
 
 			<!-- Match History -->
 			<h2 class="history-title font-cinzel text-3xl mb-5 text-white border-b border-hex-gold/30 pb-2 inline-block">

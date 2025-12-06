@@ -71,6 +71,19 @@
 		return summoner.ranked.find(r => r.queueType === type);
 	}
 
+	function getQueueName(queueType) {
+		const names = {
+			'RANKED_SOLO_5x5': 'Ranked Solo/Duo',
+			'RANKED_FLEX_SR': 'Ranked Flex',
+			'RANKED_FLEX_TT': 'Ranked Flex 3v3'
+		};
+		return names[queueType] || queueType;
+	}
+
+	function getTierIcon(tier) {
+		return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-${tier.toLowerCase()}.png`;
+	}
+
 	function formatKDA(kills, deaths, assists) {
 		const kda = deaths === 0 ? kills + assists : (kills + assists) / deaths;
 		return kda.toFixed(1);
@@ -132,26 +145,63 @@
 			<h1 class="font-cinzel text-4xl mb-0 text-white leading-none">{summoner.name}</h1>
 			<span class="text-gray-500 text-base mb-6 block tracking-[2px]">#{summoner.tag}</span>
 
-			<!-- Rank Badge -->
-			{#if getRankedData()}
-				{@const ranked = getRankedData()}
-				<div class="rank-badge flex items-center gap-5 bg-black/40 p-5 border-l-3 border-hex-blue mb-8">
-					<img 
-						src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-{ranked.tier.toLowerCase()}.png" 
-						width="60" 
-						alt="{ranked.tier}"
-					/>
-					<div class="rank-text">
-						<h3 class="m-0 text-hex-blue font-cinzel text-xl">{ranked.tier} {ranked.rank}</h3>
-						<span class="text-sm text-gray-400">{ranked.leaguePoints} LP • {ranked.wins}W {ranked.losses}L</span>
+			<!-- Level -->
+			<div class="text-sm text-gray-400 mt-4 mb-6">
+				Level: <span class="text-white font-bold">{summoner.summonerLevel}</span>
+			</div>
+
+			<!-- Personal Ratings Section -->
+			{#if summoner.ranked && summoner.ranked.length > 0}
+				<div class="mt-6 pt-6 border-t border-hex-gold/20">
+					<h3 class="font-cinzel text-hex-gold text-sm uppercase tracking-wider mb-4">Personal Ratings</h3>
+					
+					<!-- Ranked Queues -->
+					<div class="space-y-3">
+						{#each summoner.ranked as rankedQueue}
+							{@const winrate = ((rankedQueue.wins / (rankedQueue.wins + rankedQueue.losses)) * 100).toFixed(1)}
+							
+							<div class="glass-card border border-white/10 p-4 rounded-lg hover:border-hex-blue/40 transition-all">
+								<div class="flex items-center gap-4">
+									<!-- Tier Icon -->
+									<img 
+										src={getTierIcon(rankedQueue.tier)} 
+										alt={rankedQueue.tier}
+										class="w-12 h-12 object-contain"
+									/>
+									
+									<!-- Rank Info -->
+									<div class="flex-1">
+										<!-- Queue Name -->
+										<div class="text-xs text-hex-blue uppercase tracking-wide mb-1">
+											{getQueueName(rankedQueue.queueType)}
+										</div>
+										
+										<!-- Rank & Division -->
+										<div class="font-cinzel text-white text-lg mb-1">
+											{rankedQueue.tier} {rankedQueue.rank}
+										</div>
+										
+										<!-- LP -->
+										<div class="text-sm text-gray-400">
+											LP: <span class="text-hex-gold font-semibold">{rankedQueue.leaguePoints}</span>
+										</div>
+										
+										<!-- Wins & Losses -->
+										<div class="text-xs text-gray-500 mt-1">
+											Wins: {rankedQueue.wins} - Losses: {rankedQueue.losses}
+										</div>
+										
+										<!-- Winrate -->
+										<div class="text-xs mt-1">
+											<span class="text-hex-blue">Winrate: {winrate}%</span>
+										</div>
+									</div>
+								</div>
+							</div>
+						{/each}
 					</div>
 				</div>
 			{/if}
-
-			<!-- Level -->
-			<div class="text-sm text-gray-400 mt-4">
-				Level: <span class="text-white font-bold">{summoner.summonerLevel}</span>
-			</div>
 		</div>
 
 		<!-- RIGHT COLUMN - Content -->

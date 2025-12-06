@@ -6,12 +6,38 @@
 	let showVideo = false;
 	let videoReady = false;
 
-	// Pre-compute champion images for better performance
-	const jinxImg = getChampionLoading('Jinx');
-	const threshImg = getChampionLoading('Thresh');
-	const leeImg = getChampionLoading('LeeSin');
+	// Champion stats (loaded dynamically)
+	let championStats = {
+		highestWinrate: { championName: 'Amumu', championId: 'Amumu', winrate: 53.8, trend: 'up' },
+		mostPicked: { championName: 'Lee Sin', championId: 'LeeSin', pickrate: 28.4, trend: 'stable' },
+		trending: { championName: 'Briar', championId: 'Briar', banrate: 42.1, trend: 'up' }
+	};
+
+	// Champion images (reactive)
+	$: highestWinrateImg = getChampionLoading(championStats.highestWinrate.championId);
+	$: mostPickedImg = getChampionLoading(championStats.mostPicked.championId);
+	$: trendingImg = getChampionLoading(championStats.trending.championId);
+
+	// Fetch real champion stats
+	async function loadChampionStats() {
+		try {
+			const res = await fetch('/api/champion-stats');
+			if (res.ok) {
+				championStats = await res.json();
+			}
+		} catch (error) {
+			console.error('Failed to load champion stats:', error);
+			// Keep default fallback data
+		}
+	}
 
 	onMount(() => {
+		// Load champion stats
+		loadChampionStats();
+		
+		// Refresh every 30 minutes
+		const refreshInterval = setInterval(loadChampionStats, 30 * 60 * 1000);
+		
 		// Preload video in background AFTER page is interactive
 		const preloadVideo = () => {
 			showVideo = true;
@@ -30,6 +56,7 @@
 
 		return () => {
 			clearTimeout(fallback);
+			clearInterval(refreshInterval);
 			window.removeEventListener('scroll', preloadVideo);
 			window.removeEventListener('mousemove', preloadVideo);
 			window.removeEventListener('click', preloadVideo);
@@ -38,8 +65,8 @@
 </script>
 
 <svelte:head>
-	<title>easygame.gg - The Fastest League Stats Site (2.5× faster than op.gg)</title>
-	<meta name="description" content="easygame.gg is 2.5× faster than op.gg! Lightning-fast League of Legends stats with 96+ Lighthouse score. Track performance, analyze matches, and climb faster with the fastest LoL analytics platform.">
+	<title>ggez.gg - Lightning-Fast League of Legends Stats</title>
+	<meta name="description" content="ggez.gg - The fastest way to check your League of Legends stats. Track performance, analyze matches, and climb faster with real-time summoner analytics.">
 	<!-- Performance: Preconnect to CDNs -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -121,21 +148,11 @@
 	<div class="text-center w-full max-w-3xl relative z-0">
 		
 		<!-- Brand Title -->
-		<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-2 tracking-[3px] sm:tracking-[5px] uppercase gradient-text opacity-0 animate-fade-in-down"
+		<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-4 tracking-[3px] sm:tracking-[5px] uppercase gradient-text opacity-0 animate-fade-in-down"
 		    style="text-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-			Easy Game
+			GGEZ.GG
 		</h1>
 
-		<!-- Performance Badge -->
-		<div class="flex justify-center mb-6 opacity-0 animate-fade-in-down delay-200">
-			<div class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-hex-blue/20 to-hex-gold/20 border border-hex-blue/30 rounded-full backdrop-blur-sm">
-				<span class="text-2xl">⚡</span>
-				<span class="text-sm font-semibold">
-					<span class="text-hex-gold">2.5× faster</span>
-					<span class="text-gray-400"> than op.gg</span>
-				</span>
-			</div>
-		</div>
 
 		<!-- Subtitle -->
 		<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-8 sm:mb-12 md:mb-16 tracking-[1px] sm:tracking-[2px] uppercase opacity-0 animate-fade-in-down delay-400">
@@ -153,10 +170,10 @@
 			<!-- Card 1: Highest Winrate -->
 			<div class="trend-card w-44 h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
-					src={jinxImg.src}
-					srcset={jinxImg.srcset}
-					sizes={jinxImg.sizes}
-					alt="Jinx"
+					src={highestWinrateImg.src}
+					srcset={highestWinrateImg.srcset}
+					sizes={highestWinrateImg.sizes}
+					alt={championStats.highestWinrate.championName}
 					width="174"
 					height="316"
 					loading="lazy"
@@ -165,9 +182,16 @@
 				/>
 				<div class="p-4 bg-gradient-to-t from-black to-transparent">
 					<div class="text-xs text-hex-blue uppercase">Highest Winrate</div>
-					<div class="font-cinzel text-xl text-white">Jinx</div>
+					<div class="font-cinzel text-xl text-white">{championStats.highestWinrate.championName}</div>
 					<div class="text-sm text-hex-gold flex items-center gap-1">
-						<span class="text-hex-blue">▲</span> 54.2% WR
+						{#if championStats.highestWinrate.trend === 'up'}
+							<span class="text-hex-blue">▲</span>
+						{:else if championStats.highestWinrate.trend === 'down'}
+							<span class="text-red-500">▼</span>
+						{:else}
+							<span>●</span>
+						{/if}
+						{championStats.highestWinrate.winrate}% WR
 					</div>
 				</div>
 			</div>
@@ -175,10 +199,10 @@
 			<!-- Card 2: Most Picked -->
 			<div class="trend-card w-44 h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
-					src={threshImg.src}
-					srcset={threshImg.srcset}
-					sizes={threshImg.sizes}
-					alt="Thresh"
+					src={mostPickedImg.src}
+					srcset={mostPickedImg.srcset}
+					sizes={mostPickedImg.sizes}
+					alt={championStats.mostPicked.championName}
 					width="174"
 					height="316"
 					loading="lazy"
@@ -187,20 +211,27 @@
 				/>
 				<div class="p-4 bg-gradient-to-t from-black to-transparent">
 					<div class="text-xs text-hex-blue uppercase">Most Picked</div>
-					<div class="font-cinzel text-xl text-white">Thresh</div>
+					<div class="font-cinzel text-xl text-white">{championStats.mostPicked.championName}</div>
 					<div class="text-sm text-hex-gold flex items-center gap-1">
-						<span>●</span> 32% Pick
+						{#if championStats.mostPicked.trend === 'up'}
+							<span class="text-hex-blue">▲</span>
+						{:else if championStats.mostPicked.trend === 'down'}
+							<span class="text-red-500">▼</span>
+						{:else}
+							<span>●</span>
+						{/if}
+						{championStats.mostPicked.pickrate}% Pick
 					</div>
 				</div>
 			</div>
 
-			<!-- Card 3: Trending Pro -->
+			<!-- Card 3: Trending -->
 			<div class="trend-card w-44 h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
-					src={leeImg.src}
-					srcset={leeImg.srcset}
-					sizes={leeImg.sizes}
-					alt="Lee Sin"
+					src={trendingImg.src}
+					srcset={trendingImg.srcset}
+					sizes={trendingImg.sizes}
+					alt={championStats.trending.championName}
 					width="174"
 					height="316"
 					loading="lazy"
@@ -208,40 +239,23 @@
 					class="absolute inset-0 w-full h-full object-cover -z-10 grayscale-[0.5] transition-transform duration-500 group-hover:scale-110 group-hover:grayscale-0"
 				/>
 				<div class="p-4 bg-gradient-to-t from-black to-transparent">
-					<div class="text-xs text-hex-blue uppercase">Trending Pro</div>
-					<div class="font-cinzel text-xl text-white">Lee Sin</div>
+					<div class="text-xs text-hex-blue uppercase">Trending</div>
+					<div class="font-cinzel text-xl text-white">{championStats.trending.championName}</div>
 					<div class="text-sm text-hex-gold flex items-center gap-1">
-						<span class="text-red-500">▼</span> Banrate 45%
+						{#if championStats.trending.trend === 'up'}
+							<span class="text-red-500">▲</span>
+						{:else if championStats.trending.trend === 'down'}
+							<span class="text-hex-blue">▼</span>
+						{:else}
+							<span>●</span>
+						{/if}
+						{championStats.trending.banrate}% Ban
 					</div>
 				</div>
 			</div>
 
 		</div>
 
-		<!-- Performance Comparison -->
-		<div class="mt-16 sm:mt-20 md:mt-24 opacity-0 animate-fade-in-up delay-1200">
-			<div class="text-xs text-gray-500 uppercase tracking-wider mb-4">Why Choose easygame.gg?</div>
-			<div class="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-				<div class="glass-card border border-hex-blue/20 rounded-lg p-4 text-center hover:border-hex-blue/40 transition-colors">
-					<div class="text-3xl mb-2">⚡</div>
-					<div class="text-hex-gold font-bold text-2xl mb-1">96</div>
-					<div class="text-xs text-gray-400">Lighthouse Score</div>
-					<div class="text-xs text-hex-blue mt-1">vs op.gg: 39</div>
-				</div>
-				<div class="glass-card border border-hex-blue/20 rounded-lg p-4 text-center hover:border-hex-blue/40 transition-colors">
-					<div class="text-3xl mb-2">🚀</div>
-					<div class="text-hex-gold font-bold text-2xl mb-1">0.8s</div>
-					<div class="text-xs text-gray-400">Load Time</div>
-					<div class="text-xs text-hex-blue mt-1">vs op.gg: 3-5s</div>
-				</div>
-				<div class="glass-card border border-hex-blue/20 rounded-lg p-4 text-center hover:border-hex-blue/40 transition-colors">
-					<div class="text-3xl mb-2">🤖</div>
-					<div class="text-hex-gold font-bold text-2xl mb-1">AI</div>
-					<div class="text-xs text-gray-400">Match Coach</div>
-					<div class="text-xs text-hex-blue mt-1">Coming Soon</div>
-				</div>
-			</div>
-		</div>
 	</div>
 </div>
 

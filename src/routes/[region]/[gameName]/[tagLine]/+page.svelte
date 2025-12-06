@@ -156,44 +156,50 @@
 					<h3 class="font-cinzel text-hex-gold text-sm uppercase tracking-wider mb-4">Personal Ratings</h3>
 					
 					<!-- Ranked Queues -->
-					<div class="space-y-3">
+					<div class="space-y-4">
 						{#each summoner.ranked as rankedQueue}
 							{@const winrate = ((rankedQueue.wins / (rankedQueue.wins + rankedQueue.losses)) * 100).toFixed(1)}
 							
-							<div class="glass-card border border-white/10 p-4 rounded-lg hover:border-hex-blue/40 transition-all">
-								<div class="flex items-center gap-4">
-									<!-- Tier Icon -->
-									<img 
-										src={getTierIcon(rankedQueue.tier)} 
-										alt={rankedQueue.tier}
-										class="w-12 h-12 object-contain"
-									/>
+							<div class="glass-card border border-hex-gold/20 p-5 rounded-lg hover:border-hex-gold/50 hover:shadow-[0_0_25px_rgba(200,170,110,0.2)] transition-all duration-300">
+								<!-- Queue Name Header -->
+								<div class="text-xs text-hex-blue uppercase tracking-wide mb-3 font-semibold">
+									{getQueueName(rankedQueue.queueType)}
+								</div>
+								
+								<div class="flex items-center gap-5">
+									<!-- BIG Tier Icon -->
+									<div class="flex-shrink-0">
+										<img 
+											src={getTierIcon(rankedQueue.tier)} 
+											alt={rankedQueue.tier}
+											class="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(200,170,110,0.4)] hover:scale-110 transition-transform duration-300"
+										/>
+									</div>
 									
 									<!-- Rank Info -->
 									<div class="flex-1">
-										<!-- Queue Name -->
-										<div class="text-xs text-hex-blue uppercase tracking-wide mb-1">
-											{getQueueName(rankedQueue.queueType)}
-										</div>
-										
-										<!-- Rank & Division -->
-										<div class="font-cinzel text-white text-lg mb-1">
+										<!-- Rank & Division - BIG -->
+										<div class="font-cinzel text-white text-2xl mb-2 tracking-wide">
 											{rankedQueue.tier} {rankedQueue.rank}
 										</div>
 										
-										<!-- LP -->
-										<div class="text-sm text-gray-400">
-											LP: <span class="text-hex-gold font-semibold">{rankedQueue.leaguePoints}</span>
+										<!-- LP - Emphasized -->
+										<div class="text-base text-gray-300 mb-2">
+											<span class="text-hex-gold font-bold text-xl">{rankedQueue.leaguePoints}</span>
+											<span class="text-sm text-gray-400 ml-1">LP</span>
 										</div>
 										
-										<!-- Wins & Losses -->
-										<div class="text-xs text-gray-500 mt-1">
-											Wins: {rankedQueue.wins} - Losses: {rankedQueue.losses}
-										</div>
-										
-										<!-- Winrate -->
-										<div class="text-xs mt-1">
-											<span class="text-hex-blue">Winrate: {winrate}%</span>
+										<!-- Stats Row -->
+										<div class="flex items-center gap-4 text-sm">
+											<div class="text-gray-400">
+												<span class="text-green-400 font-semibold">{rankedQueue.wins}W</span>
+												<span class="text-gray-500"> / </span>
+												<span class="text-red-400 font-semibold">{rankedQueue.losses}L</span>
+											</div>
+											<div class="h-4 w-px bg-gray-600"></div>
+											<div class="text-hex-blue font-semibold">
+												{winrate}% WR
+											</div>
 										</div>
 									</div>
 								</div>
@@ -221,7 +227,7 @@
 
 					<div class="stat-shard glass-card border border-white/10 p-6 clip-tech-card">
 						<h4 class="m-0 mb-2 text-hex-gold text-xs uppercase tracking-wider">Rank</h4>
-						<div class="text-5xl font-bold text-white">{ranked.tier[0]}{ranked.rank}</div>
+						<div class="text-3xl font-bold text-white font-cinzel">{ranked.tier} {ranked.rank}</div>
 						<div class="text-xs text-gray-500 mt-1">{ranked.leaguePoints} LP</div>
 					</div>
 
@@ -290,10 +296,18 @@
 						
 						<!-- Items -->
 						<div class="items-box flex gap-1 flex-wrap sm:flex-nowrap">
-							{#each [participant.item0, participant.item1, participant.item2, participant.item3, participant.item4, participant.item5] as itemId}
-								<div class="item-icon w-8 h-8 sm:w-10 sm:h-10 bg-[#111] border border-gray-700 rounded"
-									 style={itemId ? `background-image: url('https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png'); background-size: cover;` : ''}>
-								</div>
+							{#each [participant.item0, participant.item1, participant.item2, participant.item3, participant.item4, participant.item5, participant.item6] as itemId}
+								{#if itemId && itemId > 0}
+									<img 
+										src="https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/{itemId}.png"
+										alt="Item {itemId}"
+										class="item-icon w-8 h-8 sm:w-10 sm:h-10 bg-[#111] border border-gray-700 rounded object-cover"
+										loading="lazy"
+										on:error={(e) => e.target.style.display = 'none'}
+									/>
+								{:else}
+									<div class="item-icon w-8 h-8 sm:w-10 sm:h-10 bg-[#0a0a0a] border border-gray-800 rounded opacity-30"></div>
+								{/if}
 							{/each}
 						</div>
 						

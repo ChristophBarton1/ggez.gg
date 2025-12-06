@@ -4,6 +4,7 @@
 	import { getSummonerByRiotId, getMatchHistory } from '$lib/api/riot.js';
 	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
 	import MatchAIChat from '$lib/components/MatchAIChat.svelte';
+	import RankHistoryChart from '$lib/components/RankHistoryChart.svelte';
 	import { getChampionSplashSrcset, getItemIcon, getProfileIcon } from '$lib/utils/imageProxy.js';
 
 	// Route params - reactive
@@ -89,6 +90,22 @@
 		return kda.toFixed(1);
 	}
 
+	function getQueueTypeName(queueId) {
+		const queueTypes = {
+			420: 'Ranked Solo',
+			440: 'Ranked Flex',
+			400: 'Normal Draft',
+			430: 'Normal Blind',
+			450: 'ARAM',
+			700: 'Clash',
+			900: 'URF',
+			1020: 'One For All',
+			1300: 'Nexus Blitz',
+			1700: 'Arena'
+		};
+		return queueTypes[queueId] || 'Custom Game';
+	}
+
 	function openAICoach(match) {
 		selectedMatch = match;
 		aiChatOpen = true;
@@ -167,12 +184,12 @@
 								</div>
 								
 								<div class="flex items-center gap-5">
-									<!-- BIG Tier Icon -->
+									<!-- HUGE Tier Icon -->
 									<div class="flex-shrink-0">
 										<img 
 											src={getTierIcon(rankedQueue.tier)} 
 											alt={rankedQueue.tier}
-											class="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(200,170,110,0.4)] hover:scale-110 transition-transform duration-300"
+											class="w-32 h-32 object-contain drop-shadow-[0_0_20px_rgba(200,170,110,0.5)] hover:scale-110 transition-transform duration-300"
 										/>
 									</div>
 									
@@ -206,6 +223,16 @@
 							</div>
 						{/each}
 					</div>
+					
+					<!-- Rank History Chart -->
+					{#if summoner.ranked && summoner.ranked.length > 0}
+						{@const mainRanked = summoner.ranked[0]}
+						<RankHistoryChart 
+							currentTier={mainRanked.tier}
+							currentRank={mainRanked.rank}
+							currentLP={mainRanked.leaguePoints}
+						/>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -282,7 +309,7 @@
 							<div class="result-text font-cinzel text-xl font-bold mb-1 {win ? 'text-hex-blue' : 'text-hex-red'}">
 								{win ? 'VICTORY' : 'DEFEAT'}
 							</div>
-							<div class="text-sm text-gray-400">Ranked Solo • {duration}m</div>
+							<div class="text-sm text-gray-400">{getQueueTypeName(match.info.queueId)} • {duration}m</div>
 						</div>
 						
 						<div class="kda-box">

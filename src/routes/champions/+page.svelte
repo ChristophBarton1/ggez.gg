@@ -10,7 +10,9 @@
 	let searchQuery = '';
 	let selectedRole = 'all';
 	let selectedRank = 'platinum_plus';
-	let selectedRegion = 'all';
+	let selectedRegion = 'euw'; // Default to EUW
+	let selectedQueue = 'ranked_solo'; // Default to Ranked Solo
+	let selectedPatch = 'current'; // Current patch
 	let sortBy = 'winRate'; // winRate, pickRate, banRate, tier
 	let sortDirection = 'desc'; // asc or desc
 	let latestVersion = '';
@@ -42,6 +44,23 @@
 		{ value: 'jp', label: 'JP', icon: '🇯🇵' },
 		{ value: 'tr', label: 'TR', icon: '🇹🇷' }
 	];
+	
+	// Queue Type filters
+	const queueTypes = [
+		{ value: 'ranked_solo', label: 'Ranked Solo/Duo', icon: '🏆' },
+		{ value: 'ranked_flex', label: 'Ranked Flex', icon: '👥' },
+		{ value: 'normal', label: 'Normal (Draft)', icon: '🎮' },
+		{ value: 'aram', label: 'ARAM', icon: '❄️' },
+		{ value: 'all', label: 'All Queues', icon: '🌐' }
+	];
+	
+	// Patch filters (current + last 3 patches)
+	const patches = [
+		{ value: 'current', label: 'Patch 14.24', icon: '🆕' },
+		{ value: '14.23', label: 'Patch 14.23', icon: '📊' },
+		{ value: '14.22', label: 'Patch 14.22', icon: '📊' },
+		{ value: '14.21', label: 'Patch 14.21', icon: '📊' }
+	];
 
 	// Role filters (matching LoLalytics lanes)
 	const roles = [
@@ -55,6 +74,7 @@
 
 	onMount(async () => {
 		await loadChampions();
+		isInitialized = true;
 	});
 
 	let loadPromise = null;
@@ -91,8 +111,8 @@
 					});
 				}
 				
-				// Fetch stats from our API
-				const metaRes = await fetch(`/api/champions-meta?rank=${selectedRank}&role=${selectedRole}`);
+				// Fetch stats from our API with all filters
+				const metaRes = await fetch(`/api/champions-meta?region=${selectedRegion}&rank=${selectedRank}&role=${selectedRole}&queue=${selectedQueue}&patch=${selectedPatch}`);
 				const metaData = await metaRes.json();
 				
 				if (!metaData.success) {
@@ -100,23 +120,33 @@
 				}
 				
 				// Enrich with names and images
-				champions = metaData.champions.map((stat, index) => {
-					const champInfo = championNames[stat.championId] || { id: 'Unknown', name: 'Unknown' };
-					
-					return {
-						rank: index + 1,
-						championId: stat.championId,
-						id: champInfo.id,
-						name: champInfo.name,
-						tier: stat.tier,
-						winRate: stat.winRate,
-						pickRate: stat.pickRate,
-						banRate: stat.banRate,
-						games: stat.games,
-						image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`,
-						splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`
-					};
-				}).filter(c => c.name !== 'Unknown'); // Filter out unknown champions
+				// Use a Set to track unique championIds and prevent duplicates
+				const seenIds = new Set();
+				champions = metaData.champions
+					.map((stat, index) => {
+						const champInfo = championNames[stat.championId] || { id: 'Unknown', name: 'Unknown' };
+						
+						// Skip if we've already seen this championId
+						if (seenIds.has(stat.championId)) {
+							return null;
+						}
+						seenIds.add(stat.championId);
+						
+						return {
+							rank: index + 1,
+							championId: stat.championId,
+							id: champInfo.id,
+							name: champInfo.name,
+							tier: stat.tier,
+							winRate: stat.winRate,
+							pickRate: stat.pickRate,
+							banRate: stat.banRate,
+							games: stat.games,
+							image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`,
+							splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`
+						};
+					})
+					.filter(c => c !== null && c.name !== 'Unknown'); // Filter out null and unknown champions
 				
 				// Get top 5 for spotlight
 				spotlightChampions = champions.slice(0, 5).map((c, i) => ({
@@ -127,7 +157,11 @@
 				
 				filteredChampions = champions;
 				loading = false;
-				console.log('✅ Loaded', champions.length, 'champions for', selectedRank, selectedRole);
+				
+				// Clear old console logs
+				if (champions.length > 0) {
+					console.log(`✅ ${champions.length} champions - ${selectedQueue.toUpperCase()} | ${selectedRegion.toUpperCase()} | ${selectedRank} | ${selectedRole} | ${selectedPatch}`);
+				}
 				
 			} catch (error) {
 				console.error('❌ Error loading champions:', error);
@@ -142,12 +176,16 @@
 	
 	// Debounced reload when filters change
 	let filterTimeout;
+	let isInitialized = false;
 	$: {
-		if (selectedRank || selectedRole || selectedRegion) {
-			clearTimeout(filterTimeout);
-			filterTimeout = setTimeout(() => {
-				loadChampions();
-			}, 300); // 300ms debounce
+		if (selectedRank && selectedRole && selectedRegion && selectedQueue && selectedPatch) {
+			if (isInitialized) {
+				// Only reload if already initialized (prevent double load on mount)
+				clearTimeout(filterTimeout);
+				filterTimeout = setTimeout(() => {
+					loadChampions();
+				}, 500); // 500ms debounce for better performance
+			}
 		}
 	}
 
@@ -316,6 +354,26 @@
 					</select>
 				</div>
 				
+				<!-- Queue Type Filter -->
+				<div class="filter-group">
+					<label class="filter-label" for="queue-select">Queue:</label>
+					<select id="queue-select" bind:value={selectedQueue} class="rank-select">
+						{#each queueTypes as queue}
+							<option value={queue.value}>{queue.icon} {queue.label}</option>
+						{/each}
+					</select>
+				</div>
+				
+				<!-- Patch Filter -->
+				<div class="filter-group">
+					<label class="filter-label" for="patch-select">Patch:</label>
+					<select id="patch-select" bind:value={selectedPatch} class="rank-select">
+						{#each patches as patch}
+							<option value={patch.value}>{patch.icon} {patch.label}</option>
+						{/each}
+					</select>
+				</div>
+				
 				<!-- Role Filters -->
 				{#each roles as role}
 					<button 
@@ -370,7 +428,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each filteredChampions as champ (champ.id)}
+						{#each filteredChampions as champ (champ.championId)}
 							<tr class="table-row" transition:fade={{ duration: 200 }}>
 								<td class="text-[#64748b] font-bold">{champ.rank}</td>
 								<td>

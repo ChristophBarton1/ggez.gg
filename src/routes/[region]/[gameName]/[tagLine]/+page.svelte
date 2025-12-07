@@ -226,7 +226,7 @@
 </script>
 
 <svelte:head>
-	<title>{gameName} #{tagLine} - League of Legends Stats | easygame.gg</title>
+	<title>{gameName} #{tagLine} - ggez.gg</title>
 	<meta name="description" content="View detailed League of Legends stats, match history, and performance analytics for {gameName} #{tagLine}. Track KDA, win rate, champion mastery and more.">
 	<!-- Performance: Preconnect to CDNs -->
 	<link rel="preconnect" href="https://ddragon.leagueoflegends.com">

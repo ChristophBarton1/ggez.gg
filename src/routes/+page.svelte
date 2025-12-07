@@ -5,6 +5,8 @@
 
 	let showVideo = false;
 	let videoReady = false;
+	let videoMuted = true;
+	let videoElement;
 
 	// Champion stats (loaded dynamically)
 	let championStats = {
@@ -28,6 +30,13 @@
 		} catch (error) {
 			console.error('Failed to load champion stats:', error);
 			// Keep default fallback data
+		}
+	}
+
+	function toggleMute() {
+		if (videoElement) {
+			videoMuted = !videoMuted;
+			videoElement.muted = videoMuted;
 		}
 	}
 
@@ -111,6 +120,7 @@
 	<div class="fixed inset-0 -z-20 flex items-center justify-center transition-opacity duration-1000"
 		 class:opacity-0={!videoReady}>
 		<video 
+			bind:this={videoElement}
 			autoplay 
 			muted 
 			loop 
@@ -171,7 +181,7 @@
 		<div class="mt-5 sm:mt-16 md:mt-20 flex flex-row gap-2 sm:gap-5 justify-center items-center opacity-0 animate-fade-in-up delay-900 relative z-0">
 			
 			<!-- Card 1: Highest Winrate -->
-			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={highestWinrateImg.src}
 					srcset={highestWinrateImg.srcset}
@@ -200,7 +210,7 @@
 			</div>
 
 			<!-- Card 2: Most Picked -->
-			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={mostPickedImg.src}
 					srcset={mostPickedImg.srcset}
@@ -229,7 +239,7 @@
 			</div>
 
 			<!-- Card 3: Trending -->
-			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={trendingImg.src}
 					srcset={trendingImg.srcset}
@@ -261,6 +271,28 @@
 
 	</div>
 </div>
+
+<!-- Audio Toggle Button (Desktop only) -->
+{#if showVideo && videoReady}
+	<button
+		on:click={toggleMute}
+		class="hidden sm:flex fixed bottom-6 right-6 z-50 w-10 h-10 items-center justify-center glass-card border border-hex-gold/30 rounded-full hover:border-hex-gold hover:bg-hex-gold/10 hover:scale-110 transition-all duration-300 group shadow-lg shadow-hex-gold/20"
+		aria-label={videoMuted ? 'Unmute video' : 'Mute video'}
+	>
+		{#if videoMuted}
+			<!-- Muted Icon -->
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-hex-gold group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" />
+				<path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+			</svg>
+		{:else}
+			<!-- Unmuted Icon -->
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-hex-gold group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+			</svg>
+		{/if}
+	</button>
+{/if}
 
 <style>
 	/* Mobile: Lighter Vignette - mehr vom Video sichtbar */

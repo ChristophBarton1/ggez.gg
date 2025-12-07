@@ -181,7 +181,7 @@
 		<div class="mt-5 sm:mt-16 md:mt-20 flex flex-row gap-2 sm:gap-5 justify-center items-center opacity-0 animate-fade-in-up delay-900 relative z-0">
 			
 			<!-- Card 1: Highest Winrate -->
-			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<a href="/champions" class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={highestWinrateImg.src}
 					srcset={highestWinrateImg.srcset}
@@ -207,10 +207,10 @@
 						{championStats.highestWinrate.winrate}% WR
 					</div>
 				</div>
-			</div>
+			</a>
 
 			<!-- Card 2: Most Picked -->
-			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<a href="/champions" class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={mostPickedImg.src}
 					srcset={mostPickedImg.srcset}
@@ -236,10 +236,10 @@
 						{championStats.mostPicked.pickrate}% Pick
 					</div>
 				</div>
-			</div>
+			</a>
 
 			<!-- Card 3: Trending -->
-			<div class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<a href="/champions" class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={trendingImg.src}
 					srcset={trendingImg.srcset}
@@ -265,7 +265,7 @@
 						{championStats.trending.banrate}% Ban
 					</div>
 				</div>
-			</div>
+			</a>
 
 		</div>
 

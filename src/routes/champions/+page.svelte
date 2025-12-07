@@ -46,7 +46,12 @@
 
 	async function loadChampions() {
 		try {
-			const response = await fetch('https://ddragon.leagueoflegends.com/cdn/14.1.1/data/en_US/champion.json');
+			// Use latest version for accurate champion count
+			const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+			const versions = await versionRes.json();
+			const latestVersion = versions[0];
+			
+			const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
 			const data = await response.json();
 			
 			champions = Object.values(data.data).map(champ => ({
@@ -66,9 +71,11 @@
 		}
 	}
 
-	// Get optimized champion image URL (small square tiles for fast loading)
+	// Get optimized champion image URL via CDN proxy (faster, sharper, cached)
 	function getChampionTileUrl(championId) {
-		return `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${championId}.png`;
+		// Use wsrv.nl CDN for optimized, cached images (WebP support, auto-resize)
+		const riotUrl = `https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${championId}.png`;
+		return `https://wsrv.nl/?url=${encodeURIComponent(riotUrl)}&w=200&h=200&output=webp&q=85`;
 	}
 
 	// Filter champions based on search and filters
@@ -174,14 +181,15 @@
 			{#each filteredChampions as champion, i}
 				<div class="champion-card group" style="--index: {i}">
 					<div class="relative aspect-square glass-card border border-white/10 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
-						<!-- Champion Image (optimized square tile) -->
+							<!-- Champion Image (CDN optimized, WebP, cached) -->
 						<img 
 							src={getChampionTileUrl(champion.id)}
 							alt={champion.name}
-							width="120"
-							height="120"
-							loading={i < 18 ? 'eager' : 'lazy'}
+							width="200"
+							height="200"
+							loading={i < 12 ? 'eager' : 'lazy'}
 							decoding="async"
+							fetchpriority={i < 6 ? 'high' : 'auto'}
 							class="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
 						/>
 						

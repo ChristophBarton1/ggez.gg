@@ -10,6 +10,9 @@
 	let searchQuery = '';
 	let selectedRole = 'all';
 	let selectedRank = 'platinum_plus';
+	let selectedRegion = 'all';
+	let sortBy = 'winRate'; // winRate, pickRate, banRate, tier
+	let sortDirection = 'desc'; // asc or desc
 	let latestVersion = '';
 
 	// Rank filters
@@ -23,6 +26,21 @@
 		{ value: 'platinum', label: 'Platinum', icon: '💎' },
 		{ value: 'diamond', label: 'Diamond', icon: '💠' },
 		{ value: 'master', label: 'Master+', icon: '👑' }
+	];
+	
+	// Region filters
+	const regions = [
+		{ value: 'all', label: 'All Regions', icon: '🌍' },
+		{ value: 'euw', label: 'EUW', icon: '🇪🇺' },
+		{ value: 'na', label: 'NA', icon: '🇺🇸' },
+		{ value: 'kr', label: 'KR', icon: '🇰🇷' },
+		{ value: 'eune', label: 'EUNE', icon: '🇪🇺' },
+		{ value: 'br', label: 'BR', icon: '🇧🇷' },
+		{ value: 'lan', label: 'LAN', icon: '🌎' },
+		{ value: 'las', label: 'LAS', icon: '🌎' },
+		{ value: 'oce', label: 'OCE', icon: '🇦🇺' },
+		{ value: 'jp', label: 'JP', icon: '🇯🇵' },
+		{ value: 'tr', label: 'TR', icon: '🇹🇷' }
 	];
 
 	// Role filters (matching LoLalytics lanes)
@@ -125,7 +143,7 @@
 	// Debounced reload when filters change
 	let filterTimeout;
 	$: {
-		if (selectedRank || selectedRole) {
+		if (selectedRank || selectedRole || selectedRegion) {
 			clearTimeout(filterTimeout);
 			filterTimeout = setTimeout(() => {
 				loadChampions();
@@ -133,11 +151,41 @@
 		}
 	}
 
-	// Search filter (client-side)
+	// Search filter and sorting (client-side)
 	$: {
-		filteredChampions = champions.filter(champ => {
+		let result = champions.filter(champ => {
 			return champ.name.toLowerCase().includes(searchQuery.toLowerCase());
 		});
+		
+		// Sort by selected column
+		result.sort((a, b) => {
+			let aVal, bVal;
+			
+			if (sortBy === 'tier') {
+				// Tier sorting: S+ > S > A+ > A > B
+				const tierOrder = { 'S+': 5, 'S': 4, 'A+': 3, 'A': 2, 'B': 1 };
+				aVal = tierOrder[a.tier] || 0;
+				bVal = tierOrder[b.tier] || 0;
+			} else {
+				aVal = parseFloat(a[sortBy]) || 0;
+				bVal = parseFloat(b[sortBy]) || 0;
+			}
+			
+			return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
+		});
+		
+		// Update ranks after sorting
+		filteredChampions = result.map((c, i) => ({ ...c, rank: i + 1 }));
+	}
+	
+	// Toggle sort
+	function toggleSort(column) {
+		if (sortBy === column) {
+			sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+		} else {
+			sortBy = column;
+			sortDirection = 'desc';
+		}
 	}
 
 	function getTierClass(tier) {
@@ -258,6 +306,16 @@
 					</select>
 				</div>
 				
+				<!-- Region Filter -->
+				<div class="filter-group">
+					<label class="filter-label" for="region-select">Region:</label>
+					<select id="region-select" bind:value={selectedRegion} class="rank-select">
+						{#each regions as region}
+							<option value={region.value}>{region.icon} {region.label}</option>
+						{/each}
+					</select>
+				</div>
+				
 				<!-- Role Filters -->
 				{#each roles as role}
 					<button 
@@ -284,10 +342,30 @@
 						<tr>
 							<th style="width: 50px;">#</th>
 							<th>Champion</th>
-							<th>Tier</th>
-							<th>Win Rate</th>
-							<th>Pick Rate</th>
-							<th>Ban Rate</th>
+							<th class="sortable" on:click={() => toggleSort('tier')}>
+								Tier
+								{#if sortBy === 'tier'}
+									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
+								{/if}
+							</th>
+							<th class="sortable" on:click={() => toggleSort('winRate')}>
+								Win Rate
+								{#if sortBy === 'winRate'}
+									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
+								{/if}
+							</th>
+							<th class="sortable" on:click={() => toggleSort('pickRate')}>
+								Pick Rate
+								{#if sortBy === 'pickRate'}
+									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
+								{/if}
+							</th>
+							<th class="sortable" on:click={() => toggleSort('banRate')}>
+								Ban Rate
+								{#if sortBy === 'banRate'}
+									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
+								{/if}
+							</th>
 							<th>Trend</th>
 						</tr>
 					</thead>
@@ -540,6 +618,23 @@
 		font-weight: 600;
 		letter-spacing: 1px;
 		border-bottom: 1px solid rgba(255,255,255,0.05);
+	}
+
+	.sortable {
+		cursor: pointer;
+		user-select: none;
+		transition: 0.2s;
+		position: relative;
+	}
+	.sortable:hover {
+		color: #0acbe6;
+		background: rgba(10, 203, 230, 0.05);
+	}
+
+	.sort-icon {
+		margin-left: 5px;
+		font-size: 0.7rem;
+		color: #0acbe6;
 	}
 
 	.champ-table td {

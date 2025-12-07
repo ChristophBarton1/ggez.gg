@@ -4,28 +4,35 @@
 
 	let champions = [];
 	let filteredChampions = [];
+	let spotlightChampions = [];
+	let championNames = {}; // championId -> name mapping
 	let loading = true;
 	let searchQuery = '';
 	let selectedRole = 'all';
+	let selectedRank = 'platinum_plus';
 	let latestVersion = '';
 
-	// Spotlight Champions (Top Meta Picks - hardcoded für Performance)
-	const spotlightChamps = [
-		{ id: 'Yone', name: 'Yone', role: 'Mid', tag: 'God Tier • 53.2% WR', winRate: 53.2, pickRate: 14.5, banRate: 28.1, tier: 'S+' },
-		{ id: 'Briar', name: 'Briar', role: 'Jungle', tag: 'OP Jungle', winRate: 52.8, pickRate: 10.2, banRate: 45.0, tier: 'S', tagColor: '#a855f7' },
-		{ id: 'Orianna', name: 'Orianna', role: 'Mid', tag: 'Safe Pick', winRate: 50.4, pickRate: 8.5, banRate: 4.1, tier: 'A', tagColor: '#3b82f6' },
-		{ id: 'Kaisa', name: "Kai'Sa", role: 'ADC', tag: 'Meta ADC', winRate: 51.5, pickRate: 18.2, banRate: 12.0, tier: 'S', tagColor: '#c8aa6e' },
-		{ id: 'Rell', name: 'Rell', role: 'Support', tag: 'Engage Supp', winRate: 49.9, pickRate: 6.5, banRate: 5.2, tier: 'A', tagColor: '#e84057' }
+	// Rank filters
+	const ranks = [
+		{ value: 'platinum_plus', label: 'Platinum+', icon: '💎' },
+		{ value: 'diamond_plus', label: 'Diamond+', icon: '💠' },
+		{ value: 'iron', label: 'Iron', icon: '🪨' },
+		{ value: 'bronze', label: 'Bronze', icon: '🥉' },
+		{ value: 'silver', label: 'Silver', icon: '🥈' },
+		{ value: 'gold', label: 'Gold', icon: '🥇' },
+		{ value: 'platinum', label: 'Platinum', icon: '💎' },
+		{ value: 'diamond', label: 'Diamond', icon: '💠' },
+		{ value: 'master', label: 'Master+', icon: '👑' }
 	];
 
-	// Role filters
+	// Role filters (matching LoLalytics lanes)
 	const roles = [
-		{ value: 'all', label: 'All Roles' },
-		{ value: 'Fighter', label: 'Top' },
-		{ value: 'Assassin', label: 'Jungle' },
-		{ value: 'Mage', label: 'Mid' },
-		{ value: 'Marksman', label: 'Bottom' },
-		{ value: 'Support', label: 'Support' }
+		{ value: 'all', label: 'All Roles', icon: '🌐' },
+		{ value: 'top', label: 'Top', icon: '⬆️' },
+		{ value: 'jungle', label: 'Jungle', icon: '🌲' },
+		{ value: 'mid', label: 'Mid', icon: '⭐' },
+		{ value: 'adc', label: 'ADC', icon: '🎯' },
+		{ value: 'support', label: 'Support', icon: '🛡️' }
 	];
 
 	onMount(async () => {
@@ -34,69 +41,91 @@
 
 	async function loadChampions() {
 		try {
-			// Get Latest Version
+			loading = true;
+			
+			// Get Latest Version for images
 			const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
 			const versions = await versionRes.json();
 			latestVersion = versions[0];
 			
-			// Fetch Champion Data
-			const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
-			const data = await response.json();
+			// Fetch Champion Names from Riot
+			const champDataRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
+			const champData = await champDataRes.json();
 			
-			// Process & Enrich Data
-			champions = Object.values(data.data).map((champ, index) => {
-				// Generate realistic stats (in production, fetch from u.gg API)
-				const winRate = (48 + Math.random() * 6).toFixed(1);
-				const pickRate = (Math.random() * 25).toFixed(1);
-				const banRate = (Math.random() * 30).toFixed(1);
-				
-				let tier = 'B';
-				if (parseFloat(winRate) > 52) tier = 'S';
-				else if (parseFloat(winRate) > 51.5) tier = 'S+';
-				else if (parseFloat(winRate) > 50) tier = 'A';
+			// Build championId -> name/key mapping
+			Object.values(champData.data).forEach(champ => {
+				championNames[champ.key] = {
+					id: champ.id,
+					name: champ.name,
+					key: champ.key
+				};
+			});
+			
+			// Fetch REAL stats from our API (powered by LoLalytics)
+			const metaRes = await fetch(`/api/champions-meta?rank=${selectedRank}&role=${selectedRole}`);
+			const metaData = await metaRes.json();
+			
+			if (!metaData.success) {
+				throw new Error('Failed to fetch meta data');
+			}
+			
+			// Enrich with names and images
+			champions = metaData.champions.map((stat, index) => {
+				const champInfo = championNames[stat.championId] || { id: 'Unknown', name: 'Unknown' };
 				
 				return {
 					rank: index + 1,
-					id: champ.id,
-					name: champ.name,
-					role: champ.tags[0] || 'Unknown',
-					tags: champ.tags,
-					tier,
-					winRate,
-					pickRate,
-					banRate,
-					image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champ.id}.png`,
-					splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champ.id}_0.jpg`
+					championId: stat.championId,
+					id: champInfo.id,
+					name: champInfo.name,
+					tier: stat.tier,
+					winRate: stat.winRate,
+					pickRate: stat.pickRate,
+					banRate: stat.banRate,
+					games: stat.games,
+					image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`,
+					splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`
 				};
-			});
-
-			// Sort by Win Rate (desc)
-			champions.sort((a, b) => parseFloat(b.winRate) - parseFloat(a.winRate));
+			}).filter(c => c.name !== 'Unknown'); // Filter out unknown champions
 			
-			// Update ranks after sort
-			champions = champions.map((c, i) => ({ ...c, rank: i + 1 }));
-
+			// Get top 5 for spotlight
+			spotlightChampions = champions.slice(0, 5).map((c, i) => ({
+				...c,
+				tag: i === 0 ? `God Tier • ${c.winRate}% WR` : `${c.tier} Tier`,
+				tagColor: i === 0 ? '#c8aa6e' : ['#a855f7', '#3b82f6', '#10b981', '#e84057'][i - 1]
+			}));
+			
 			filteredChampions = champions;
 			loading = false;
+			console.log('✅ Loaded', champions.length, 'champions for', selectedRank, selectedRole);
+			
 		} catch (error) {
-			console.error('Error loading champions:', error);
+			console.error('❌ Error loading champions:', error);
 			loading = false;
 		}
 	}
+	
+	// Reload when filters change
+	$: if (selectedRank || selectedRole) {
+		loadChampions();
+	}
 
-	// Filter Logic
+	// Search filter (client-side)
 	$: {
 		filteredChampions = champions.filter(champ => {
-			const matchesSearch = champ.name.toLowerCase().includes(searchQuery.toLowerCase());
-			const matchesRole = selectedRole === 'all' || champ.tags.includes(selectedRole);
-			return matchesSearch && matchesRole;
+			return champ.name.toLowerCase().includes(searchQuery.toLowerCase());
 		});
 	}
 
 	function getTierClass(tier) {
-		if (tier.includes('S')) return 'tier-s';
-		if (tier === 'A') return 'tier-a';
+		if (tier === 'S+' || tier === 'S') return 'tier-s';
+		if (tier === 'A+' || tier === 'A') return 'tier-a';
 		return 'tier-b';
+	}
+	
+	function getRoleLabel(role) {
+		const roleMap = { top: 'Top', jungle: 'Jungle', mid: 'Mid', adc: 'ADC', support: 'Support' };
+		return roleMap[role] || role;
 	}
 </script>
 
@@ -134,16 +163,17 @@
 		</div>
 
 		<!-- Spotlight Grid (Top 5 Meta Champions) -->
+		{#if spotlightChampions.length >= 5}
 		<div class="spotlight-grid mb-16">
-			<!-- Hero Card (Yone) -->
+			<!-- Hero Card -->
 			<div class="spotlight-card spotlight-hero group cursor-pointer">
-				<img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{spotlightChamps[0].id}_0.jpg" alt={spotlightChamps[0].name} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+				<img src={spotlightChampions[0].splash} alt={spotlightChampions[0].name} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
 				<div class="overlay">
-					<div class="meta-tag">{spotlightChamps[0].tag}</div>
-					<div class="hero-name">{spotlightChamps[0].name}</div>
+					<div class="meta-tag">{spotlightChampions[0].tag}</div>
+					<div class="hero-name">{spotlightChampions[0].name}</div>
 					<div class="hero-stat">
-						<span>Pick Rate: <b>{spotlightChamps[0].pickRate}%</b></span>
-						<span>Ban Rate: <b>{spotlightChamps[0].banRate}%</b></span>
+						<span>Pick Rate: <b>{spotlightChampions[0].pickRate}%</b></span>
+						<span>Ban Rate: <b>{spotlightChampions[0].banRate}%</b></span>
 					</div>
 				</div>
 			</div>
@@ -151,17 +181,17 @@
 			<!-- Column 1 -->
 			<div class="spotlight-col">
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{spotlightChamps[1].id}_0.jpg" alt={spotlightChamps[1].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightChampions[1].splash} alt={spotlightChampions[1].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChamps[1].tagColor}; color: white;">{spotlightChamps[1].tag}</div>
-						<div class="mini-name">{spotlightChamps[1].name}</div>
+						<div class="meta-tag" style="background: {spotlightChampions[1].tagColor}; color: white;">{spotlightChampions[1].tag}</div>
+						<div class="mini-name">{spotlightChampions[1].name}</div>
 					</div>
 				</div>
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{spotlightChamps[2].id}_0.jpg" alt={spotlightChamps[2].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightChampions[2].splash} alt={spotlightChampions[2].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChamps[2].tagColor}; color: white;">{spotlightChamps[2].tag}</div>
-						<div class="mini-name">{spotlightChamps[2].name}</div>
+						<div class="meta-tag" style="background: {spotlightChampions[2].tagColor}; color: white;">{spotlightChampions[2].tag}</div>
+						<div class="mini-name">{spotlightChampions[2].name}</div>
 					</div>
 				</div>
 			</div>
@@ -169,21 +199,22 @@
 			<!-- Column 2 -->
 			<div class="spotlight-col">
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{spotlightChamps[3].id}_0.jpg" alt={spotlightChamps[3].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightChampions[3].splash} alt={spotlightChampions[3].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChamps[3].tagColor}; color: black;">{spotlightChamps[3].tag}</div>
-						<div class="mini-name">{spotlightChamps[3].name}</div>
+						<div class="meta-tag" style="background: {spotlightChampions[3].tagColor}; color: white;">{spotlightChampions[3].tag}</div>
+						<div class="mini-name">{spotlightChampions[3].name}</div>
 					</div>
 				</div>
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{spotlightChamps[4].id}_0.jpg" alt={spotlightChamps[4].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightChampions[4].splash} alt={spotlightChampions[4].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChamps[4].tagColor}; color: white;">{spotlightChamps[4].tag}</div>
-						<div class="mini-name">{spotlightChamps[4].name}</div>
+						<div class="meta-tag" style="background: {spotlightChampions[4].tagColor}; color: white;">{spotlightChampions[4].tag}</div>
+						<div class="mini-name">{spotlightChampions[4].name}</div>
 					</div>
 				</div>
 			</div>
 		</div>
+		{/if}
 
 		<!-- Statistics Section -->
 		<div class="header-title mb-5" style="font-size: 1.5rem;">
@@ -194,17 +225,30 @@
 		<div class="data-panel">
 			<!-- Controls -->
 			<div class="panel-controls">
+				<!-- Rank Filter -->
+				<div class="filter-group">
+					<label class="filter-label" for="rank-select">Rank:</label>
+					<select id="rank-select" bind:value={selectedRank} class="rank-select">
+						{#each ranks as rank}
+							<option value={rank.value}>{rank.icon} {rank.label}</option>
+						{/each}
+					</select>
+				</div>
+				
+				<!-- Role Filters -->
 				{#each roles as role}
 					<button 
 						class="filter-btn {selectedRole === role.value ? 'active' : ''}" 
 						on:click={() => selectedRole = role.value}
 					>
+						<span class="role-icon">{role.icon}</span>
 						{role.label}
 					</button>
 				{/each}
+				
 				<input 
 					type="text" 
-					placeholder="Search champion..." 
+					placeholder="🔍 Search champion..." 
 					bind:value={searchQuery}
 					class="search-input"
 				>
@@ -382,6 +426,40 @@
 		gap: 15px;
 		border-bottom: 1px solid rgba(255,255,255,0.05);
 		flex-wrap: wrap;
+		align-items: center;
+	}
+
+	.filter-group {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 12px;
+		background: rgba(10, 203, 230, 0.05);
+		border: 1px solid rgba(10, 203, 230, 0.2);
+		border-radius: 8px;
+	}
+
+	.filter-label {
+		font-size: 0.85rem;
+		color: #0acbe6;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.rank-select {
+		background: transparent;
+		border: none;
+		color: white;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		outline: none;
+		padding: 4px 8px;
+	}
+	.rank-select option {
+		background: #1a1b23;
+		color: white;
 	}
 
 	.filter-btn {
@@ -392,11 +470,18 @@
 		border-radius: 6px;
 		cursor: pointer;
 		transition: 0.2s;
+		display: flex;
+		align-items: center;
+		gap: 6px;
 	}
 	.filter-btn.active, .filter-btn:hover {
 		background: rgba(10, 203, 230, 0.1);
 		color: #0acbe6;
 		border-color: #0acbe6;
+	}
+	
+	.role-icon {
+		font-size: 1rem;
 	}
 
 	.search-input {

@@ -19,6 +19,7 @@
 	let championPerformance = [];
 	let championLPGains = [];
 	let loading = true;
+	let refreshing = false; // Background refresh indicator
 	let loadingLPStats = false;
 	let loadingFullSeason = false;
 	let lpStatsLoaded = false; // Track if LP stats have been loaded
@@ -56,87 +57,157 @@
 		loadSummonerData(gameName, tagLine, region);
 	}
 
-	// Cache for faster subsequent loads
-	const dataCache = new Map();
+	// 🚀 INSTANT LOADING: Multi-layer cache strategy
+	const memoryCache = new Map(); // L1: In-memory (fastest)
+	const CACHE_KEY_PREFIX = 'ggez_profile_';
+	const CACHE_DURATION_FRESH = 2 * 60 * 1000; // 2 min = fresh
+	const CACHE_DURATION_STALE = 10 * 60 * 1000; // 10 min = usable
 	
+	// 🚀 Load from LocalStorage (L2 cache)
+	function loadFromLocalStorage(cacheKey) {
+		try {
+			const cached = localStorage.getItem(CACHE_KEY_PREFIX + cacheKey);
+			if (cached) {
+				return JSON.parse(cached);
+			}
+		} catch (e) {
+			console.warn('LocalStorage read error:', e);
+		}
+		return null;
+	}
+	
+	// 💾 Save to LocalStorage
+	function saveToLocalStorage(cacheKey, data) {
+		try {
+			localStorage.setItem(CACHE_KEY_PREFIX + cacheKey, JSON.stringify(data));
+		} catch (e) {
+			console.warn('LocalStorage write error (quota?):', e);
+		}
+	}
+	
+	// ⚡ INSTANT: Optimistic UI with stale-while-revalidate
 	async function loadSummonerData(name, tag, reg) {
 		const cacheKey = `${reg}_${name}_${tag}`;
+		let showedStaleData = false;
 		
-		// Check cache first
-		if (dataCache.has(cacheKey)) {
-			const cached = dataCache.get(cacheKey);
+		// 🚀 PHASE 1: Check L1 cache (memory) - INSTANT!
+		if (memoryCache.has(cacheKey)) {
+			const cached = memoryCache.get(cacheKey);
 			const age = Date.now() - cached.timestamp;
 			
-			// Cache valid for 2 minutes
-			if (age < 120000) {
-				console.log('⚡ Using cached data');
+			// Fresh data? Show immediately, no loading!
+			if (age < CACHE_DURATION_FRESH) {
+				console.log('⚡ INSTANT: Memory cache (fresh)');
 				summoner = cached.summoner;
 				matches = cached.matches;
 				maxMatchesLoaded = cached.matches.length;
 				if (cached.bgImage) currentBgImage = cached.bgImage;
 				loading = false;
-				return;
+				return; // Done! No API call needed
+			}
+			
+			// Stale but usable? Show immediately, refresh in background!
+			if (age < CACHE_DURATION_STALE) {
+				console.log('⚡ INSTANT: Showing stale data, refreshing in background...');
+				summoner = cached.summoner;
+				matches = cached.matches;
+				maxMatchesLoaded = cached.matches.length;
+				if (cached.bgImage) currentBgImage = cached.bgImage;
+				loading = false; // ← NO LOADING STATE!
+				refreshing = true; // Show subtle refresh indicator
+				showedStaleData = true;
+				// Continue to fetch fresh data below...
 			}
 		}
 		
-		loading = true;
+		// 🚀 PHASE 2: Check L2 cache (localStorage) - Still fast!
+		if (!showedStaleData && !summoner) {
+			const localData = loadFromLocalStorage(cacheKey);
+			if (localData) {
+				const age = Date.now() - localData.timestamp;
+				
+				if (age < CACHE_DURATION_STALE) {
+					console.log('⚡ INSTANT: LocalStorage cache');
+					summoner = localData.summoner;
+					matches = localData.matches;
+					maxMatchesLoaded = localData.matches.length;
+					if (localData.bgImage) currentBgImage = localData.bgImage;
+					loading = false;
+					refreshing = true;
+					showedStaleData = true;
+					// Continue to refresh...
+				}
+			}
+		}
+		
+		// 📡 PHASE 3: Fetch fresh data (only if no cache OR refreshing stale)
+		if (!showedStaleData) {
+			loading = true; // Only show loading if no cached data
+		}
+		
 		error = null;
-		summoner = null;
-		matches = [];
 		matchHistoryLimit = 7;
 		lpStatsLoaded = false;
 		championStatsCalculated = false;
 		
 		try {
-			// ⚡ PARALLEL LOADING - Fetch summoner and matches simultaneously
-			const summonerPromise = getSummonerByRiotId(name, tag, reg);
-			
-			// Wait for summoner first (we need PUUID for matches)
-			const summonerData = await summonerPromise;
+			// Fetch fresh data
+			const summonerData = await getSummonerByRiotId(name, tag, reg);
 			
 			if (summonerData.error) {
-				error = summonerData.error;
-				loading = false;
+				// If we showed stale data, keep it; otherwise show error
+				if (!showedStaleData) {
+					error = summonerData.error;
+					loading = false;
+				}
 				return;
 			}
 
-			summoner = summonerData;
+			// Fetch matches
+			const matchData = await getMatchHistory(summonerData.puuid, reg, 5);
 
-			// ⚡ FAST: Load only 5 matches initially (not 10)
-			// User can load more if needed
-			const matchData = await getMatchHistory(summoner.puuid, reg, 5);
-			matches = matchData;
-			maxMatchesLoaded = 5;
-
-			// Set initial background
+			// Background image
 			let bgImage = '';
-			if (matches.length > 0) {
-				const firstMatch = matches[0];
-				const participant = firstMatch.info.participants.find(p => p.puuid === summoner.puuid);
+			if (matchData.length > 0) {
+				const firstMatch = matchData[0];
+				const participant = firstMatch.info.participants.find(p => p.puuid === summonerData.puuid);
 				if (participant) {
 					bgImage = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${participant.championName}_0.jpg`;
-					currentBgImage = bgImage;
 				}
 			}
 			
-			// Cache the results
-			dataCache.set(cacheKey, {
+			const cacheData = {
 				summoner: summonerData,
 				matches: matchData,
 				bgImage,
 				timestamp: Date.now()
-			});
+			};
 			
-			console.log('⚡ Profile loaded in < 1s');
+			// Update both caches
+			memoryCache.set(cacheKey, cacheData);
+			saveToLocalStorage(cacheKey, cacheData);
+			
+			// Update UI with fresh data
+			summoner = summonerData;
+			matches = matchData;
+			maxMatchesLoaded = matchData.length;
+			if (bgImage) currentBgImage = bgImage;
+			
+			if (showedStaleData) {
+				console.log('✅ Background refresh complete');
+				refreshing = false;
+			} else {
+				console.log('⚡ Fresh data loaded');
+			}
 
 		} catch (err) {
 			console.error('Load error:', err);
-			error = err.message;
+			if (!showedStaleData) {
+				error = err.message;
+			}
 		}
 		
 		loading = false;
-
-		// Champion stats and LP statistics will be loaded only when user clicks on their respective tabs
 	}
 
 	async function loadLPStatistics(puuid, reg) {
@@ -287,9 +358,20 @@
 
 <!-- Navigation -->
 <nav class="sticky top-0 z-50 flex flex-col sm:grid sm:grid-cols-[150px_1fr_150px] md:grid-cols-[200px_1fr_200px] items-center gap-3 sm:gap-0 px-4 sm:px-6 md:px-10 py-3 sm:py-5 backdrop-blur-xl border-b border-hex-gold/30 bg-hex-darker/95">
-	<a href="/" class="font-cinzel text-xl sm:text-2xl text-hex-gold tracking-[1px] sm:tracking-[2px] no-underline hover:text-white transition-colors">
-		EASY GAME
-	</a>
+	<div class="flex items-center gap-2">
+		<a href="/" class="font-cinzel text-xl sm:text-2xl text-hex-gold tracking-[1px] sm:tracking-[2px] no-underline hover:text-white transition-colors">
+			EASY GAME
+		</a>
+		{#if refreshing}
+			<div class="flex items-center gap-1 text-hex-blue text-xs animate-pulse">
+				<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+				</svg>
+				<span class="hidden sm:inline">Refreshing...</span>
+			</div>
+		{/if}
+	</div>
 	<div class="flex justify-center w-full order-3 sm:order-none">
 		<div class="w-full max-w-2xl">
 			<SummonerSearch showRegionSelector={true} />

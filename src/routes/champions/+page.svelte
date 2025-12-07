@@ -71,11 +71,10 @@
 		}
 	}
 
-	// Get optimized champion image URL via CDN proxy (faster, sharper, cached)
+	// Get champion square image directly from Riot CDN (fast, reliable)
 	function getChampionTileUrl(championId) {
-		// Use wsrv.nl CDN for optimized, cached images (WebP support, auto-resize)
-		const riotUrl = `https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${championId}.png`;
-		return `https://wsrv.nl/?url=${encodeURIComponent(riotUrl)}&w=200&h=200&output=webp&q=85`;
+		// Direct Riot CDN - simple, fast, reliable
+		return `https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${championId}.png`;
 	}
 
 	// Filter champions based on search and filters
@@ -177,53 +176,30 @@
 		</div>
 	{:else}
 		<!-- Champions Grid -->
-		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+		<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
 			{#each filteredChampions as champion, i}
 				<div class="champion-card group" style="--index: {i}">
-					<div class="relative aspect-square glass-card border border-white/10 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
-							<!-- Champion Image (CDN optimized, WebP, cached) -->
+					<div class="relative aspect-square bg-hex-dark border border-white/10 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:border-hex-gold hover:scale-105 hover:shadow-lg">
+						<!-- Champion Image (Direct Riot CDN) -->
 						<img 
 							src={getChampionTileUrl(champion.id)}
 							alt={champion.name}
-							width="200"
-							height="200"
-							loading={i < 12 ? 'eager' : 'lazy'}
+							width="120"
+							height="120"
+							loading={i < 24 ? 'eager' : 'lazy'}
 							decoding="async"
-							fetchpriority={i < 6 ? 'high' : 'auto'}
-							class="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+							class="w-full h-full object-cover"
 						/>
 						
-						<!-- Gradient Overlay -->
-						<div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+						<!-- Hover Overlay -->
+						<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
 
-						<!-- Difficulty Badge -->
-						<div class="absolute top-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-sm rounded-lg border border-white/10">
-							<span class="text-xs {difficultyColors[champion.difficulty]} font-semibold">
-								{champion.difficulty}
-							</span>
-						</div>
-
-						<!-- Role Tags -->
-						<div class="absolute top-2 left-2 flex gap-1">
-							{#each champion.tags.slice(0, 2) as tag}
-								<span class="px-2 py-1 bg-hex-blue/80 backdrop-blur-sm rounded text-[10px] text-white font-semibold uppercase">
-									{tag}
-								</span>
-							{/each}
-						</div>
-
-						<!-- Champion Info -->
-						<div class="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
-							<h3 class="font-cinzel text-sm sm:text-base text-white mb-0.5 truncate leading-tight">
+						<!-- Champion Name (always visible) -->
+						<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+							<p class="text-xs text-white font-semibold text-center truncate">
 								{champion.name}
-							</h3>
-							<p class="text-[10px] sm:text-xs text-gray-400 truncate">
-								{champion.title}
 							</p>
 						</div>
-
-						<!-- Hover Overlay -->
-						<div class="absolute inset-0 bg-gradient-to-t from-hex-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 					</div>
 				</div>
 			{/each}

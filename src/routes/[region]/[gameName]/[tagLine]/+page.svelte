@@ -1,10 +1,11 @@
 <script>
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { getSummonerByRiotId, getMatchHistory, analyzeChampionPerformance } from '$lib/api/riot.js';
+	import { getSummonerByRiotId, getMatchHistory, analyzeChampionPerformance, analyzeChampionLPGains } from '$lib/api/riot.js';
 	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
 	import MatchAIChat from '$lib/components/MatchAIChat.svelte';
 	import ChampionPerformanceChart from '$lib/components/ChampionPerformanceChart.svelte';
+	import LPGainsByChampion from '$lib/components/LPGainsByChampion.svelte';
 	import { getChampionSplashSrcset, getItemIcon, getProfileIcon } from '$lib/utils/imageProxy.js';
 
 	// Route params - reactive
@@ -14,14 +15,41 @@
 
 	let summoner = null;
 	let matches = [];
+	let allMatches = []; // For LP stats (100+ matches)
 	let championPerformance = [];
+	let championLPGains = [];
 	let loading = true;
+	let loadingLPStats = false;
+	let loadingFullSeason = false;
+	let lpStatsLoaded = false; // Track if LP stats have been loaded
 	let error = null;
 	let currentBgImage = '';
 	
 	// AI Coach state
 	let selectedMatch = null;
 	let aiChatOpen = false;
+	
+	// Tab state
+	let activeTab = 'matchHistory';
+	
+	// Track which data has been loaded
+	let championStatsCalculated = false;
+	
+	// Watch for tab changes to load data on demand
+	$: if (activeTab === 'championStats' && !championStatsCalculated && matches.length > 0 && summoner) {
+		championPerformance = analyzeChampionPerformance(matches, summoner.puuid);
+		championStatsCalculated = true;
+	}
+	
+	$: if (activeTab === 'lpGains' && !lpStatsLoaded && summoner) {
+		loadLPStatistics(summoner.puuid, region);
+		lpStatsLoaded = true;
+	}
+	
+	// Match History pagination
+	let matchHistoryLimit = 7;
+	let loadingMoreMatches = false;
+	let maxMatchesLoaded = 20; // Current max loaded
 
 	// Reactive: Load data when params change
 	$: if (gameName && tagLine && region) {
@@ -33,6 +61,9 @@
 		error = null;
 		summoner = null;
 		matches = [];
+		matchHistoryLimit = 7; // Reset limit
+		lpStatsLoaded = false; // Reset LP stats loaded flag
+		championStatsCalculated = false; // Reset champion stats flag
 		
 		// Fetch summoner data
 		const summonerData = await getSummonerByRiotId(name, tag, reg);
@@ -45,15 +76,16 @@
 
 		summoner = summonerData;
 
-		// Fetch match history
-		const matchData = await getMatchHistory(summoner.puuid, reg);
-		matches = matchData;
+		// Small delay before loading matches to avoid rate limit on account endpoint
+		await new Promise(resolve => setTimeout(resolve, 500));
 
-		// Analyze champion performance
+		// Fetch match history (load only 10 matches initially to minimize API requests)
+		const matchData = await getMatchHistory(summoner.puuid, reg, 10);
+		matches = matchData;
+		maxMatchesLoaded = 10;
+
+		// Set initial background from first match
 		if (matches.length > 0) {
-			championPerformance = analyzeChampionPerformance(matches, summoner.puuid);
-			
-			// Set initial background
 			const firstMatch = matches[0];
 			const participant = firstMatch.info.participants.find(p => p.puuid === summoner.puuid);
 			if (participant) {
@@ -62,6 +94,57 @@
 		}
 
 		loading = false;
+
+		// Champion stats and LP statistics will be loaded only when user clicks on their respective tabs
+		// See reactive statements above for tab watching
+	}
+
+	async function loadLPStatistics(puuid, reg) {
+		loadingLPStats = true;
+		
+		// Strategy: Load matches progressively to avoid rate limits
+		// Start with 100, then optionally load more in the background
+		console.log('Loading extended match data for LP statistics...');
+		
+		// Initial load: 100 matches (covers ~2-3 weeks of active play)
+		let extendedMatches = await getMatchHistory(puuid, reg, 100);
+		
+		console.log(`Loaded ${extendedMatches.length} matches for LP statistics`);
+		
+		allMatches = extendedMatches;
+		
+		// Calculate LP gains with extended data
+		if (extendedMatches.length > 0) {
+			championLPGains = analyzeChampionLPGains(extendedMatches, puuid);
+			console.log('LP Statistics calculated with', extendedMatches.length, 'matches');
+		}
+		
+		loadingLPStats = false;
+		
+		// Optional: Load even more data in background for full season (200+ matches)
+		// This happens after initial data is shown to user
+		loadFullSeasonData(puuid, reg);
+	}
+
+	async function loadFullSeasonData(puuid, reg) {
+		// Wait 3 seconds before loading more to spread out API requests
+		await new Promise(resolve => setTimeout(resolve, 3000));
+		
+		loadingFullSeason = true;
+		console.log('Loading full season data in background...');
+		
+		// Load up to 200 matches for comprehensive season stats
+		const fullSeasonMatches = await getMatchHistory(puuid, reg, 200);
+		
+		if (fullSeasonMatches.length > allMatches.length) {
+			console.log(`Extended to ${fullSeasonMatches.length} matches for full season data`);
+			allMatches = fullSeasonMatches;
+			
+			// Recalculate LP gains with full season data
+			championLPGains = analyzeChampionLPGains(fullSeasonMatches, puuid);
+		}
+		
+		loadingFullSeason = false;
 	}
 
 	function handleMatchHover(match) {
@@ -113,6 +196,32 @@
 	function openAICoach(match) {
 		selectedMatch = match;
 		aiChatOpen = true;
+	}
+
+	async function loadMoreMatches() {
+		if (loadingMoreMatches || !summoner) return;
+		
+		loadingMoreMatches = true;
+		
+		// Load more matches for match history display (e.g., next 50)
+		const newCount = maxMatchesLoaded + 50;
+		const newMatches = await getMatchHistory(summoner.puuid, region, newCount);
+		
+		matches = newMatches;
+		maxMatchesLoaded = newCount;
+		
+		// Update champion performance chart with new data if it was already calculated
+		if (matches.length > 0 && championStatsCalculated) {
+			championPerformance = analyzeChampionPerformance(matches, summoner.puuid);
+		}
+		
+		// Note: LP gains already uses allMatches (100 matches) so no need to recalculate
+		
+		loadingMoreMatches = false;
+	}
+
+	function showMoreMatchHistory() {
+		matchHistoryLimit = matches.length;
 	}
 </script>
 
@@ -235,18 +344,37 @@
 		<!-- RIGHT COLUMN - Content -->
 		<div class="content-col">
 			
-			<!-- Champion Performance Chart at TOP -->
-			{#if championPerformance.length > 0}
-				<ChampionPerformanceChart championStats={championPerformance} />
-			{/if}
+			<!-- Tab Navigation -->
+			<div class="tabs-nav flex gap-4 mb-8 border-b border-hex-gold/20 pb-0">
+				<button 
+					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'matchHistory' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'}"
+					on:click={() => activeTab = 'matchHistory'}
+				>
+					Match History
+				</button>
+				<button 
+					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'championStats' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'}"
+					on:click={() => activeTab = 'championStats'}
+				>
+					Champion Stats
+				</button>
+				<button 
+					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'lpGains' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'}"
+					on:click={() => activeTab = 'lpGains'}
+				>
+					LP Gains
+				</button>
+			</div>
 
-			<!-- Match History -->
-			<h2 class="history-title font-cinzel text-3xl mb-5 text-white border-b border-hex-gold/30 pb-2 inline-block">
-				Combat Record
-			</h2>
+			<!-- Tab Content -->
+			{#if activeTab === 'matchHistory'}
+				<!-- Match History Tab -->
+				<h2 class="history-title font-cinzel text-3xl mb-5 text-white border-b border-hex-gold/30 pb-2 inline-block">
+					Recent Matches
+				</h2>
 
-			<div class="match-list flex flex-col gap-4">
-				{#each matches as match, i}
+				<div class="match-list flex flex-col gap-4">
+				{#each matches.slice(0, matchHistoryLimit) as match, i}
 					{@const participant = match.info.participants.find(p => p.puuid === summoner.puuid)}
 					{@const win = participant?.win}
 					{@const duration = Math.floor(match.info.gameDuration / 60)}
@@ -326,7 +454,84 @@
 					</div>
 				</div>
 				{/each}
-			</div>
+				</div>
+
+				<!-- Show More Buttons -->
+				<div class="flex flex-col gap-3 mt-6 items-center">
+					{#if matchHistoryLimit < matches.length}
+						<button
+							on:click={showMoreMatchHistory}
+							class="show-more-btn bg-hex-darker border border-hex-gold/30 text-hex-gold px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:bg-hex-gold/10 hover:border-hex-gold transition-all duration-300 clip-tech-btn"
+						>
+							Show More Matches ({matches.length - matchHistoryLimit} remaining)
+						</button>
+					{/if}
+					
+					{#if matches.length >= maxMatchesLoaded}
+						<button
+							on:click={loadMoreMatches}
+							disabled={loadingMoreMatches}
+							class="load-more-btn bg-gradient-to-r from-hex-blue/20 to-hex-gold/20 border border-hex-blue/30 text-white px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:from-hex-blue/30 hover:to-hex-gold/30 hover:border-hex-gold transition-all duration-300 clip-tech-btn disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{#if loadingMoreMatches}
+								Loading More Matches...
+							{:else}
+								Load More from API (50+ matches)
+							{/if}
+						</button>
+					{/if}
+				</div>
+			{:else if activeTab === 'championStats'}
+				<!-- Champion Stats Tab -->
+				<h2 class="history-title font-cinzel text-3xl mb-5 text-white border-b border-hex-gold/30 pb-2 inline-block">
+					Champion Performance
+				</h2>
+				{#if championPerformance.length > 0}
+					<ChampionPerformanceChart championStats={championPerformance} />
+				{:else}
+					<div class="text-center py-12 text-gray-500">
+						<p class="text-lg">No champion data available</p>
+					</div>
+				{/if}
+			{:else if activeTab === 'lpGains'}
+				<!-- LP Gains Tab -->
+				<div class="flex items-center justify-between mb-5 border-b border-hex-gold/30 pb-2">
+					<h2 class="history-title font-cinzel text-3xl text-white">
+						LP Gains by Champion
+					</h2>
+					{#if loadingLPStats}
+						<div class="flex items-center gap-2 text-hex-gold">
+							<div class="animate-spin h-5 w-5 border-2 border-hex-gold border-t-transparent rounded-full"></div>
+							<span class="text-sm font-semibold">Loading extended stats...</span>
+						</div>
+					{:else if loadingFullSeason}
+						<div class="flex items-center gap-2 text-hex-blue">
+							<div class="animate-spin h-4 w-4 border-2 border-hex-blue border-t-transparent rounded-full"></div>
+							<span class="text-xs font-semibold">Loading full season data...</span>
+						</div>
+					{:else if allMatches.length > 0}
+						<span class="text-sm text-gray-400">
+							Based on {allMatches.length} matches
+						</span>
+					{/if}
+				</div>
+				
+				{#if loadingLPStats && championLPGains.length === 0}
+					<div class="text-center py-12 text-gray-400">
+						<div class="animate-pulse">
+							<div class="text-2xl mb-4">⏳</div>
+							<p class="text-lg">Loading comprehensive LP statistics...</p>
+							<p class="text-sm mt-2">Fetching 100 matches for accurate data</p>
+						</div>
+					</div>
+				{:else if championLPGains.length > 0}
+					<LPGainsByChampion championStats={championLPGains} summonerPuuid={summoner.puuid} />
+				{:else}
+					<div class="text-center py-12 text-gray-500">
+						<p class="text-lg">No ranked games found in recent matches</p>
+					</div>
+				{/if}
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -369,6 +574,49 @@
 	.match-champ-img {
 		-webkit-mask-image: linear-gradient(to right, black 50%, transparent 100%);
 		mask-image: linear-gradient(to right, black 40%, transparent 100%);
+	}
+
+	/* Tab Navigation Styles */
+	.tabs-nav {
+		position: relative;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.tabs-nav::-webkit-scrollbar {
+		display: none;
+	}
+
+	.tab-btn {
+		position: relative;
+		background: transparent;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: all 0.3s ease;
+	}
+
+	.tab-btn:hover {
+		transform: translateY(-2px);
+	}
+
+	/* Button Styles */
+	.clip-tech-btn {
+		clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+	}
+
+	.show-more-btn,
+	.load-more-btn {
+		min-width: 250px;
+	}
+
+	.show-more-btn:hover {
+		box-shadow: 0 0 20px rgba(200, 170, 110, 0.3);
+	}
+
+	.load-more-btn:hover:not(:disabled) {
+		box-shadow: 0 0 20px rgba(66, 138, 255, 0.3);
 	}
 
 	/* Fix mobile scrolling */

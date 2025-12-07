@@ -147,18 +147,18 @@
 <div class="fixed inset-0 -z-10 pointer-events-none bg-gradient-radial from-transparent via-transparent to-black"></div>
 
 <!-- Main Container -->
-<div class="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 md:px-8">
+<div class="min-h-screen flex flex-col items-center justify-center sm:justify-center justify-start pt-20 sm:pt-0 px-4 sm:px-6 md:px-8">
 	<div class="text-center w-full max-w-3xl relative z-0">
 		
 		<!-- Brand Title - LCP Element (immediately visible) -->
-		<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-4 tracking-[3px] sm:tracking-[5px] uppercase gradient-text"
+		<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3 sm:mb-4 tracking-[3px] sm:tracking-[5px] uppercase gradient-text"
 		    style="text-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 			GGEZ.GG
 		</h1>
 
 
 		<!-- Subtitle -->
-		<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-8 sm:mb-12 md:mb-16 tracking-[1px] sm:tracking-[2px] uppercase opacity-0 animate-fade-in-down delay-400">
+		<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-6 sm:mb-12 md:mb-16 tracking-[1px] sm:tracking-[2px] uppercase opacity-0 animate-fade-in-down delay-400">
 			Lightning-Fast Summoner Analytics
 		</div>
 
@@ -168,10 +168,10 @@
 		</div>
 
 		<!-- Trending Champions -->
-		<div class="mt-12 sm:mt-16 md:mt-20 flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center items-center opacity-0 animate-fade-in-up delay-900 relative z-0">
+		<div class="mt-6 sm:mt-16 md:mt-20 flex flex-row gap-2 sm:gap-5 justify-center items-center opacity-0 animate-fade-in-up delay-900 relative z-0">
 			
 			<!-- Card 1: Highest Winrate -->
-			<div class="trend-card w-44 h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<div class="trend-card w-28 h-40 sm:w-44 sm:h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={highestWinrateImg.src}
 					srcset={highestWinrateImg.srcset}
@@ -183,10 +183,10 @@
 					decoding="async"
 					class="absolute inset-0 w-full h-full object-cover -z-10 grayscale-[0.5] transition-transform duration-500 group-hover:scale-110 group-hover:grayscale-0"
 				/>
-				<div class="p-4 bg-gradient-to-t from-black to-transparent">
-					<div class="text-xs text-hex-blue uppercase">Highest Winrate</div>
-					<div class="font-cinzel text-xl text-white">{championStats.highestWinrate.championName}</div>
-					<div class="text-sm text-hex-gold flex items-center gap-1">
+				<div class="p-2 sm:p-4 bg-gradient-to-t from-black to-transparent">
+					<div class="text-[8px] sm:text-xs text-hex-blue uppercase">Highest WR</div>
+					<div class="font-cinzel text-xs sm:text-xl text-white truncate">{championStats.highestWinrate.championName}</div>
+					<div class="text-[10px] sm:text-sm text-hex-gold flex items-center gap-1">
 						{#if championStats.highestWinrate.trend === 'up'}
 							<span class="text-hex-blue">▲</span>
 						{:else if championStats.highestWinrate.trend === 'down'}
@@ -200,7 +200,7 @@
 			</div>
 
 			<!-- Card 2: Most Picked -->
-			<div class="trend-card w-44 h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<div class="trend-card w-28 h-40 sm:w-44 sm:h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={mostPickedImg.src}
 					srcset={mostPickedImg.srcset}
@@ -212,10 +212,10 @@
 					decoding="async"
 					class="absolute inset-0 w-full h-full object-cover -z-10 grayscale-[0.5] transition-transform duration-500 group-hover:scale-110 group-hover:grayscale-0"
 				/>
-				<div class="p-4 bg-gradient-to-t from-black to-transparent">
-					<div class="text-xs text-hex-blue uppercase">Most Picked</div>
-					<div class="font-cinzel text-xl text-white">{championStats.mostPicked.championName}</div>
-					<div class="text-sm text-hex-gold flex items-center gap-1">
+				<div class="p-2 sm:p-4 bg-gradient-to-t from-black to-transparent">
+					<div class="text-[8px] sm:text-xs text-hex-blue uppercase">Most Picked</div>
+					<div class="font-cinzel text-xs sm:text-xl text-white truncate">{championStats.mostPicked.championName}</div>
+					<div class="text-[10px] sm:text-sm text-hex-gold flex items-center gap-1">
 						{#if championStats.mostPicked.trend === 'up'}
 							<span class="text-hex-blue">▲</span>
 						{:else if championStats.mostPicked.trend === 'down'}
@@ -229,7 +229,7 @@
 			</div>
 
 			<!-- Card 3: Trending -->
-			<div class="trend-card w-44 h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
+			<div class="trend-card w-28 h-40 sm:w-44 sm:h-60 relative glass-card border border-white/10 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end clip-tech-card hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
 				<img 
 					src={trendingImg.src}
 					srcset={trendingImg.srcset}
@@ -241,10 +241,10 @@
 					decoding="async"
 					class="absolute inset-0 w-full h-full object-cover -z-10 grayscale-[0.5] transition-transform duration-500 group-hover:scale-110 group-hover:grayscale-0"
 				/>
-				<div class="p-4 bg-gradient-to-t from-black to-transparent">
-					<div class="text-xs text-hex-blue uppercase">Trending</div>
-					<div class="font-cinzel text-xl text-white">{championStats.trending.championName}</div>
-					<div class="text-sm text-hex-gold flex items-center gap-1">
+				<div class="p-2 sm:p-4 bg-gradient-to-t from-black to-transparent">
+					<div class="text-[8px] sm:text-xs text-hex-blue uppercase">Trending</div>
+					<div class="font-cinzel text-xs sm:text-xl text-white truncate">{championStats.trending.championName}</div>
+					<div class="text-[10px] sm:text-sm text-hex-gold flex items-center gap-1">
 						{#if championStats.trending.trend === 'up'}
 							<span class="text-red-500">▲</span>
 						{:else if championStats.trending.trend === 'down'}

@@ -151,6 +151,69 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 }
 
 /**
+ * Utility function to delay execution (for rate limiting)
+ */
+function delay(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch matches in batches to respect rate limits
+ * Development Key: 20 requests/second, 100 requests/2 minutes
+ */
+async function fetchMatchesInBatches(matchIds, routingValue, batchSize = 5, delayMs = 1000) {
+	const matches = [];
+	
+	for (let i = 0; i < matchIds.length; i += batchSize) {
+		const batch = matchIds.slice(i, i + batchSize);
+		
+		console.log(`Fetching batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(matchIds.length / batchSize)}...`);
+		
+		const batchPromises = batch.map(async (matchId) => {
+			const matchUrl = `https://${routingValue}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
+			
+			try {
+				const matchRes = await fetch(matchUrl, {
+					headers: { 'X-Riot-Token': RIOT_API_KEY }
+				});
+				
+				if (!matchRes.ok) {
+					if (matchRes.status === 429) {
+						console.warn(`⚠️ Rate limit hit for match ${matchId}, waiting 3 seconds...`);
+						await delay(3000); // Wait 3 seconds on rate limit
+						// Retry once
+						const retryRes = await fetch(matchUrl, {
+							headers: { 'X-Riot-Token': RIOT_API_KEY }
+						});
+						if (retryRes.ok) {
+							return await retryRes.json();
+						}
+						return null;
+					}
+					console.error(`Match ${matchId} API error:`, matchRes.status);
+					return null;
+				}
+				
+				return await matchRes.json();
+			} catch (error) {
+				console.error(`Error fetching match ${matchId}:`, error);
+				return null;
+			}
+		});
+		
+		const batchResults = await Promise.all(batchPromises);
+		matches.push(...batchResults.filter(m => m !== null));
+		
+		// Delay between batches to avoid rate limits
+		if (i + batchSize < matchIds.length) {
+			await delay(delayMs);
+		}
+	}
+	
+	return matches;
+}
+
+/**
  * Get match history for summoner
  * @param {string} puuid - Summoner PUUID
  * @param {string} region - Region code
@@ -172,24 +235,13 @@ export async function getMatchHistory(puuid, region, count = 20) {
 		}
 		
 		const matchIds = await matchIdsRes.json();
+		console.log(`Fetching ${matchIds.length} matches...`);
 		
-		// Fetch details for each match
-		const matchPromises = matchIds.map(async (matchId) => {
-			const matchUrl = `https://${routingValue}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
-			const matchRes = await fetch(matchUrl, {
-				headers: { 'X-Riot-Token': RIOT_API_KEY }
-			});
-			
-			if (!matchRes.ok) {
-				console.error(`Match ${matchId} API error:`, matchRes.status);
-				return null;
-			}
-			
-			return await matchRes.json();
-		});
+		// Fetch matches in batches with rate limiting
+		const matches = await fetchMatchesInBatches(matchIds, routingValue);
 		
-		const matches = await Promise.all(matchPromises);
-		return matches.filter(m => m !== null);
+		console.log(`Successfully loaded ${matches.length}/${matchIds.length} matches`);
+		return matches;
 		
 	} catch (error) {
 		console.error('Match History Error:', error);
@@ -241,6 +293,121 @@ export function analyzeChampionPerformance(matches, puuid) {
 	
 	// Sort by games played
 	return championArray.sort((a, b) => b.games - a.games);
+}
+
+/**
+ * Analyze LP gains by champion (Ranked games only)
+ */
+export function analyzeChampionLPGains(matches, puuid) {
+	const championStats = {};
+	
+	// Ranked queue IDs
+	const rankedQueues = [420, 440]; // Solo/Duo and Flex
+	
+	matches.forEach(match => {
+		// Only analyze ranked games
+		if (!rankedQueues.includes(match.info.queueId)) return;
+		
+		const participant = match.info.participants.find(p => p.puuid === puuid);
+		if (!participant) return;
+		
+		const championName = participant.championName;
+		const gameDuration = match.info.gameDuration; // in seconds
+		
+		if (!championStats[championName]) {
+			championStats[championName] = {
+				championName,
+				championId: participant.championId,
+				role: participant.teamPosition || 'UNKNOWN',
+				games: 0,
+				wins: 0,
+				lpChange: 0,
+				kills: 0,
+				deaths: 0,
+				assists: 0,
+				totalCS: 0,
+				totalDamage: 0,
+				totalDamageTaken: 0,
+				totalGold: 0,
+				totalKills: 0, // Team kills for KP calculation
+				totalGameDuration: 0,
+				goldDiffAt15: 0,
+				csDiffAt15: 0,
+				gamesWithGoldDiff: 0,
+				gamesWithCSDiff: 0
+			};
+		}
+		
+		const stats = championStats[championName];
+		stats.games++;
+		
+		// Estimate LP change based on performance (more realistic)
+		// Base LP: +20 for win, -18 for loss
+		// Modified by performance factors
+		let lpChange = participant.win ? 20 : -18;
+		
+		// Performance modifiers
+		const kda = participant.deaths === 0 ? 
+			(participant.kills + participant.assists) : 
+			(participant.kills + participant.assists) / participant.deaths;
+		
+		if (participant.win) {
+			// Bonus LP for exceptional performance
+			if (kda > 5) lpChange += 2;
+			if (participant.kills > 15) lpChange += 1;
+		} else {
+			// Reduced LP loss for good performance in a loss
+			if (kda > 3) lpChange += 2;
+		}
+		
+		stats.lpChange += lpChange;
+		if (participant.win) stats.wins++;
+		stats.kills += participant.kills;
+		stats.deaths += participant.deaths;
+		stats.assists += participant.assists;
+		stats.totalCS += (participant.totalMinionsKilled || 0) + (participant.neutralMinionsKilled || 0);
+		stats.totalDamage += participant.totalDamageDealtToChampions || 0;
+		stats.totalDamageTaken += participant.totalDamageTaken || 0;
+		stats.totalGold += participant.goldEarned || 0;
+		stats.totalGameDuration += gameDuration;
+		
+		// Gold and CS diff at 15 (if available in timeline data)
+		if (participant.challenges) {
+			if (participant.challenges.goldPerMinute) {
+				stats.goldDiffAt15 += (participant.challenges.goldPerMinute * 15) - 3000; // Estimate
+				stats.gamesWithGoldDiff++;
+			}
+		}
+		
+		// Calculate team kills for kill participation
+		const teamParticipants = match.info.participants.filter(p => p.teamId === participant.teamId);
+		const teamKills = teamParticipants.reduce((sum, p) => sum + p.kills, 0);
+		stats.totalKills += teamKills;
+	});
+	
+	// Calculate averages and stats
+	const championArray = Object.values(championStats).map(stats => {
+		const avgGameDuration = stats.totalGameDuration / stats.games / 60; // in minutes
+		const killParticipation = stats.totalKills > 0 ? 
+			((stats.kills + stats.assists) / stats.totalKills) * 100 : 0;
+		
+		return {
+			...stats,
+			winrate: (stats.wins / stats.games) * 100,
+			avgKills: stats.kills / stats.games,
+			avgDeaths: stats.deaths / stats.games,
+			avgAssists: stats.assists / stats.games,
+			kda: stats.deaths === 0 ? (stats.kills + stats.assists) : (stats.kills + stats.assists) / stats.deaths,
+			csPerMin: stats.totalCS / (stats.totalGameDuration / 60),
+			dpm: (stats.totalDamage / (stats.totalGameDuration / 60)),
+			goldPerMin: (stats.totalGold / (stats.totalGameDuration / 60)),
+			killParticipation: killParticipation,
+			avgGoldDiffAt15: stats.gamesWithGoldDiff > 0 ? stats.goldDiffAt15 / stats.gamesWithGoldDiff : 0
+		};
+	});
+	
+	// Sort by LP gained
+	return championArray.sort((a, b) => b.lpChange - a.lpChange);
 }
 
 /**

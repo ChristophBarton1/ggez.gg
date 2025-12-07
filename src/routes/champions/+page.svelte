@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
 
 	let champions = [];
 	let filteredChampions = [];
@@ -7,10 +8,11 @@
 	let searchQuery = '';
 	let selectedTag = 'all';
 	let selectedDifficulty = 'all';
+	let scrollY = 0;
 
-	// Tag filters (based on actual Riot tags)
+	// Tag filters (Standard Riot Classes)
 	const tags = [
-		{ value: 'all', label: 'All Classes', icon: '🎮' },
+		{ value: 'all', label: 'All', icon: '💠' },
 		{ value: 'Fighter', label: 'Fighter', icon: '⚔️' },
 		{ value: 'Tank', label: 'Tank', icon: '🛡️' },
 		{ value: 'Mage', label: 'Mage', icon: '✨' },
@@ -21,23 +23,9 @@
 
 	// Difficulty mapping
 	const difficultyMap = {
-		1: 'Easy',
-		2: 'Easy',
-		3: 'Easy',
-		4: 'Average',
-		5: 'Average',
-		6: 'Average',
-		7: 'Hard',
-		8: 'Hard',
-		9: 'Severe',
-		10: 'Severe'
-	};
-
-	const difficultyColors = {
-		'Easy': 'text-green-400',
-		'Average': 'text-yellow-400',
-		'Hard': 'text-orange-400',
-		'Severe': 'text-red-400'
+		1: 'Easy', 2: 'Easy', 3: 'Easy',
+		4: 'Medium', 5: 'Medium', 6: 'Medium',
+		7: 'Hard', 8: 'Hard', 9: 'Severe', 10: 'Severe'
 	};
 
 	onMount(async () => {
@@ -46,22 +34,28 @@
 
 	async function loadChampions() {
 		try {
-			// Use latest version for accurate champion count
+			// 1. Get Latest Version dynamically
 			const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
 			const versions = await versionRes.json();
 			const latestVersion = versions[0];
 			
+			// 2. Fetch Data
 			const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
 			const data = await response.json();
 			
+			// 3. Process Data
 			champions = Object.values(data.data).map(champ => ({
-				id: champ.id,
+				id: champ.id, // Important: Use ID for images (e.g. 'MonkeyKing' not 'Wukong')
 				name: champ.name,
 				title: champ.title,
 				tags: champ.tags,
 				info: champ.info,
-				difficulty: difficultyMap[champ.info.difficulty] || 'Average'
+				difficulty: difficultyMap[champ.info.difficulty] || 'Medium',
+				image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champ.id}.png`
 			}));
+
+			// Sort alphabetically
+			champions.sort((a, b) => a.name.localeCompare(b.name));
 
 			filteredChampions = champions;
 			loading = false;
@@ -71,169 +65,188 @@
 		}
 	}
 
-	// Get champion square image directly from Riot CDN (fast, reliable)
-	function getChampionTileUrl(championId) {
-		// Direct Riot CDN - simple, fast, reliable
-		return `https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${championId}.png`;
+	// Image Error Fallback (fixes broken new champs)
+	function handleImageError(e) {
+		e.target.src = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/-1.png';
+		e.target.classList.add('opacity-50', 'grayscale');
 	}
 
-	// Filter champions based on search and filters
+	// Filter Logic
 	$: {
 		filteredChampions = champions.filter(champ => {
 			const matchesSearch = champ.name.toLowerCase().includes(searchQuery.toLowerCase());
 			const matchesTag = selectedTag === 'all' || champ.tags.includes(selectedTag);
 			const matchesDifficulty = selectedDifficulty === 'all' || champ.difficulty === selectedDifficulty;
-			
 			return matchesSearch && matchesTag && matchesDifficulty;
 		});
 	}
 </script>
+
+<svelte:window bind:scrollY />
 
 <svelte:head>
 	<title>All Champions - ggez.gg</title>
 	<meta name="description" content="Browse all League of Legends champions with stats, builds and guides.">
 </svelte:head>
 
-<!-- Dynamic Background -->
-<div class="hero-bg fixed inset-0 -z-50 bg-gradient-to-b from-hex-darker via-black to-hex-darker"></div>
+<!-- Background Ambience -->
+<div class="fixed inset-0 -z-50 bg-[#050a14]">
+	<div class="absolute inset-0 bg-gradient-to-b from-[#091428] via-[#0a1428] to-[#050a14]"></div>
+	<!-- Hextech Glows -->
+	<div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-hex-blue/5 rounded-full blur-[120px]"></div>
+</div>
 
-<!-- Navigation -->
-<nav class="sticky top-0 z-50 flex items-center justify-between px-6 md:px-10 py-5 backdrop-blur-xl border-b border-hex-gold/30 bg-hex-darker/95">
-	<a href="/" class="font-cinzel text-2xl text-hex-gold tracking-[2px] no-underline hover:text-white transition-colors">
+<!-- Navigation (Simplified for this view) -->
+<nav class="fixed top-0 w-full z-50 px-6 py-4 flex items-center justify-between transition-all duration-300 {scrollY > 20 ? 'bg-[#091428]/90 backdrop-blur-md border-b border-white/5' : 'bg-transparent'}">
+	<a href="/" class="font-cinzel text-2xl text-hex-gold tracking-[3px] hover:text-white transition-colors drop-shadow-lg no-underline">
 		GGEZ.GG
 	</a>
+	<div class="text-xs text-hex-blue/80 font-cinzel tracking-widest uppercase hidden sm:block">
+		Champion Database
+	</div>
 </nav>
 
-<div class="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12">
-	
-	<!-- Header -->
-	<div class="text-center mb-8 sm:mb-12">
-		<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl text-white mb-4 tracking-wider">
-			All League of Legends Champions
+<div class="min-h-screen pt-24 pb-20 px-4 sm:px-8 max-w-[1800px] mx-auto">
+
+	<!-- Hero Header -->
+	<div class="text-center mb-12 sm:mb-16 relative">
+		<h1 class="font-cinzel text-5xl sm:text-7xl text-transparent bg-clip-text bg-gradient-to-b from-[#f0e6d2] to-[#c8aa6e] mb-4 tracking-wider drop-shadow-sm">
+			ROSTER
 		</h1>
-		<p class="text-gray-400 text-lg sm:text-xl">
-			There are <span class="text-hex-gold font-bold">{champions.length} champions</span> in LoL
-		</p>
+		<div class="flex items-center justify-center gap-4 text-sm tracking-widest text-hex-blue/60 font-cinzel">
+			<span class="h-[1px] w-12 bg-hex-blue/30"></span>
+			<span>{champions.length} CHAMPIONS AVAILABLE</span>
+			<span class="h-[1px] w-12 bg-hex-blue/30"></span>
+		</div>
 	</div>
 
-	<!-- Filters & Search -->
-	<div class="glass-card border border-hex-gold/30 rounded-xl p-4 sm:p-6 mb-8 sm:mb-12">
-		<div class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+	<!-- Sticky Control Bar -->
+	<div class="sticky top-20 z-40 mb-10 transition-all duration-300 {scrollY > 100 ? '-translate-y-2' : ''}">
+		<div class="glass-panel border border-white/10 rounded-2xl p-2 sm:p-3 shadow-2xl backdrop-blur-xl bg-[#091428]/80 flex flex-col md:flex-row gap-3 items-center justify-between max-w-5xl mx-auto ring-1 ring-white/5">
 			
 			<!-- Search -->
-			<div class="flex-1">
+			<div class="relative w-full md:w-80 group">
+				<div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 group-focus-within:text-hex-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+					</svg>
+				</div>
 				<input
 					type="text"
 					bind:value={searchQuery}
-					placeholder="Search by champion name..."
-					class="w-full px-4 py-3 bg-hex-dark/50 border border-hex-gold/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-hex-blue transition-colors"
+					placeholder="Find a champion..."
+					class="w-full bg-[#050a14]/60 border border-white/10 text-white text-sm rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-hex-gold/50 focus:ring-1 focus:ring-hex-gold/20 transition-all placeholder-gray-600"
 				/>
 			</div>
 
-			<!-- Class Filter -->
-			<div class="flex gap-2 flex-wrap lg:flex-nowrap">
+			<!-- Role Filters -->
+			<div class="flex items-center gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 no-scrollbar">
 				{#each tags as tag}
 					<button
 						on:click={() => selectedTag = tag.value}
-						class="px-3 py-2 rounded-lg border transition-all text-sm {selectedTag === tag.value 
-							? 'bg-hex-gold text-black border-hex-gold' 
-							: 'bg-hex-dark/50 text-gray-300 border-hex-gold/30 hover:border-hex-gold/50'}"
+						class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap
+						{selectedTag === tag.value 
+							? 'bg-gradient-to-r from-hex-gold/20 to-hex-gold/10 text-hex-gold border border-hex-gold/30 shadow-[0_0_15px_rgba(200,170,110,0.1)]' 
+							: 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}"
 					>
-						<span class="mr-1">{tag.icon}</span>
-						<span class="hidden sm:inline">{tag.label}</span>
+						<span>{tag.icon}</span>
+						<span>{tag.label}</span>
 					</button>
 				{/each}
 			</div>
 
-			<!-- Difficulty Filter -->
-			<select
-				bind:value={selectedDifficulty}
-				class="px-4 py-3 bg-hex-dark/50 border border-hex-gold/30 rounded-lg text-white focus:outline-none focus:border-hex-blue transition-colors cursor-pointer"
-			>
-				<option value="all">All Difficulties</option>
-				<option value="Easy">Easy</option>
-				<option value="Average">Average</option>
-				<option value="Hard">Hard</option>
-				<option value="Severe">Severe</option>
-			</select>
-		</div>
-
-		<!-- Results Count -->
-		<div class="mt-4 text-center text-gray-400 text-sm">
-			Showing <span class="text-hex-blue font-semibold">{filteredChampions.length}</span> champion{filteredChampions.length !== 1 ? 's' : ''}
+			<!-- Difficulty (Desktop only) -->
+			<div class="hidden lg:block border-l border-white/10 pl-3 ml-2">
+				<select
+					bind:value={selectedDifficulty}
+					class="bg-transparent text-gray-400 text-sm focus:outline-none cursor-pointer hover:text-white transition-colors"
+				>
+					<option value="all">Any Difficulty</option>
+					<option value="Easy">Easy</option>
+					<option value="Medium">Medium</option>
+					<option value="Hard">Hard</option>
+				</select>
+			</div>
 		</div>
 	</div>
 
+	<!-- Results Grid -->
 	{#if loading}
-		<div class="flex items-center justify-center py-20">
-			<div class="text-hex-blue text-2xl font-cinzel animate-pulse">Loading Champions...</div>
+		<div class="flex flex-col items-center justify-center py-32 gap-4">
+			<div class="w-16 h-16 border-4 border-hex-blue/30 border-t-hex-gold rounded-full animate-spin"></div>
+			<div class="font-cinzel text-hex-gold animate-pulse">Summoning Champions...</div>
 		</div>
 	{:else if filteredChampions.length === 0}
-		<div class="text-center py-20">
-			<div class="text-6xl mb-4">🔍</div>
+		<div class="text-center py-32" in:fade>
+			<div class="text-6xl mb-4 opacity-50">🌑</div>
 			<h2 class="font-cinzel text-2xl text-white mb-2">No Champions Found</h2>
-			<p class="text-gray-400">Try adjusting your filters or search query</p>
+			<p class="text-gray-500">The void is empty. Try different filters.</p>
 		</div>
 	{:else}
-		<!-- Champions Grid -->
-		<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
-			{#each filteredChampions as champion, i}
-				<div class="champion-card group" style="--index: {i}">
-					<div class="relative aspect-square bg-hex-dark border border-white/10 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:border-hex-gold hover:scale-105 hover:shadow-lg">
-						<!-- Champion Image (Direct Riot CDN) -->
-						<img 
-							src={getChampionTileUrl(champion.id)}
-							alt={champion.name}
-							width="120"
-							height="120"
-							loading={i < 24 ? 'eager' : 'lazy'}
-							decoding="async"
-							class="w-full h-full object-cover"
-						/>
-						
-						<!-- Hover Overlay -->
-						<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+		<div class="grid grid-cols-3 min-[450px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9 gap-2 sm:gap-3 md:gap-4 px-1">
+			{#each filteredChampions as champion, i (champion.id)}
+				<div 
+					class="group relative aspect-square bg-[#0c1626] rounded-xl overflow-hidden border border-[#1c2738] hover:border-hex-gold/50 hover:shadow-[0_0_20px_rgba(200,170,110,0.2)] hover:z-10 transition-all duration-300 cursor-pointer"
+					in:fly={{ y: 20, duration: 400, delay: i < 20 ? i * 30 : 0 }}
+				>
+					<!-- Image -->
+					<img 
+						src={champion.image}
+						alt={champion.name}
+						width="120"
+						height="120"
+						on:error={handleImageError}
+						loading={i < 24 ? 'eager' : 'lazy'}
+						decoding="async"
+						class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+					/>
+					
+					<!-- Inner Shadow / Vignette -->
+					<div class="absolute inset-0 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] pointer-events-none"></div>
 
-						<!-- Champion Name (always visible) -->
-						<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
-							<p class="text-xs text-white font-semibold text-center truncate">
-								{champion.name}
-							</p>
+					<!-- Hover Overlay (Gradient) -->
+					<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+					<!-- Name Label -->
+					<div class="absolute bottom-0 left-0 right-0 p-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+						<div class="text-[10px] sm:text-xs text-center font-bold text-[#f0e6d2] uppercase tracking-wide truncate drop-shadow-md group-hover:text-hex-gold">
+							{champion.name}
+						</div>
+						<!-- Role Text (Visible on Hover) -->
+						<div class="h-0 group-hover:h-auto overflow-hidden opacity-0 group-hover:opacity-100 transition-all duration-300 delay-75">
+							<div class="text-[9px] text-hex-blue text-center mt-0.5 font-medium tracking-wider uppercase">
+								{champion.tags[0]}
+							</div>
 						</div>
 					</div>
+					
+					<!-- Active Ring Effect -->
+					<div class="absolute inset-0 border border-hex-gold/0 group-hover:border-hex-gold/30 rounded-xl transition-all duration-500 pointer-events-none"></div>
 				</div>
 			{/each}
+		</div>
+		
+		<div class="mt-12 text-center text-gray-600 text-xs font-cinzel tracking-wider">
+			Showing {filteredChampions.length} Champions
 		</div>
 	{/if}
 </div>
 
 <style>
-	select {
-		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23C8AA6E' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-		background-position: right 0.5rem center;
-		background-repeat: no-repeat;
-		background-size: 1.5em 1.5em;
-		padding-right: 2.5rem;
-		appearance: none;
+	/* Custom Scrollbar hide for filter bar */
+	.no-scrollbar::-webkit-scrollbar {
+		display: none;
+	}
+	.no-scrollbar {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
 	}
 
-	.champion-card {
-		animation: fadeInUp 0.4s ease forwards;
-		opacity: 0;
-	}
-
-	.champion-card {
-		animation-delay: calc(0.02s * var(--index, 0));
-	}
-
-	@keyframes fadeInUp {
-		from {
-			opacity: 0;
-			transform: translateY(20px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+	/* Glass Panel Utility */
+	.glass-panel {
+		background: linear-gradient(180deg, rgba(15, 25, 45, 0.7) 0%, rgba(9, 15, 30, 0.8) 100%);
+		box-shadow: 
+			0 4px 30px rgba(0, 0, 0, 0.1),
+			inset 0 1px 0 rgba(255, 255, 255, 0.05);
 	}
 </style>

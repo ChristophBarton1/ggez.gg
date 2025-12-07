@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { parseSummonerInput } from '$lib/api/riot.js';
+	import { parseSummonerInput, getSummonerByRiotId } from '$lib/api/riot.js';
 	import { onMount } from 'svelte';
 
 	export let placeholder = 'Search Summoner (e.g. Zykonos #EUW)';
@@ -14,6 +14,8 @@
 	let suggestions = [];
 	let inputFocused = false;
 	let recentSearches = [];
+	let prefetchTimeout = null;
+	const prefetchedProfiles = new Set(); // Track what we've prefetched
 
 	onMount(() => {
 		// Load recent searches from localStorage
@@ -120,6 +122,51 @@
 		localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
 	}
 
+	// 🚀 PREDICTIVE PREFETCH: Load data when user hovers
+	async function prefetchProfile(suggestion) {
+		if (suggestion.type === 'header') return;
+		
+		const parsed = parseSummonerInput(suggestion.text);
+		if (!parsed) return;
+		
+		const cacheKey = `${region}_${parsed.gameName}_${parsed.tagLine}`;
+		
+		// Already prefetched? Skip
+		if (prefetchedProfiles.has(cacheKey)) {
+			console.log('⚡ Already prefetched:', cacheKey);
+			return;
+		}
+		
+		// Check if already in cache
+		const cached = localStorage.getItem('ggez_profile_' + cacheKey);
+		if (cached) {
+			console.log('⚡ Already cached:', cacheKey);
+			prefetchedProfiles.add(cacheKey);
+			return;
+		}
+		
+		console.log('🚀 Prefetching:', parsed.gameName, '#', parsed.tagLine);
+		prefetchedProfiles.add(cacheKey);
+		
+		// Fetch in background (don't await)
+		getSummonerByRiotId(parsed.gameName, parsed.tagLine, region).catch(err => {
+			console.warn('Prefetch failed:', err);
+			prefetchedProfiles.delete(cacheKey);
+		});
+	}
+
+	// 🎯 Smart hover detection - wait 150ms to avoid prefetching on quick mouse movements
+	function handleSuggestionHover(suggestion) {
+		clearTimeout(prefetchTimeout);
+		prefetchTimeout = setTimeout(() => {
+			prefetchProfile(suggestion);
+		}, 150);
+	}
+
+	function handleSuggestionLeave() {
+		clearTimeout(prefetchTimeout);
+	}
+
 	async function handleSearch() {
 		if (!summonerName) return;
 		
@@ -218,6 +265,8 @@
 				{:else}
 					<button
 						on:click={() => selectSuggestion(suggestion)}
+						on:mouseenter={() => handleSuggestionHover(suggestion)}
+						on:mouseleave={handleSuggestionLeave}
 						class="w-full px-6 py-3 text-left flex items-center justify-between hover:bg-hex-gold/10 transition-colors duration-200 border-b border-hex-gold/5 last:border-b-0 group"
 					>
 						<div class="flex items-center gap-3">

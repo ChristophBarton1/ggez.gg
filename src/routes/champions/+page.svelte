@@ -39,75 +39,98 @@
 		await loadChampions();
 	});
 
+	let loadPromise = null;
+	
 	async function loadChampions() {
-		try {
-			loading = true;
-			
-			// Get Latest Version for images
-			const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
-			const versions = await versionRes.json();
-			latestVersion = versions[0];
-			
-			// Fetch Champion Names from Riot
-			const champDataRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
-			const champData = await champDataRes.json();
-			
-			// Build championId -> name/key mapping
-			Object.values(champData.data).forEach(champ => {
-				championNames[champ.key] = {
-					id: champ.id,
-					name: champ.name,
-					key: champ.key
-				};
-			});
-			
-			// Fetch REAL stats from our API (powered by LoLalytics)
-			const metaRes = await fetch(`/api/champions-meta?rank=${selectedRank}&role=${selectedRole}`);
-			const metaData = await metaRes.json();
-			
-			if (!metaData.success) {
-				throw new Error('Failed to fetch meta data');
-			}
-			
-			// Enrich with names and images
-			champions = metaData.champions.map((stat, index) => {
-				const champInfo = championNames[stat.championId] || { id: 'Unknown', name: 'Unknown' };
-				
-				return {
-					rank: index + 1,
-					championId: stat.championId,
-					id: champInfo.id,
-					name: champInfo.name,
-					tier: stat.tier,
-					winRate: stat.winRate,
-					pickRate: stat.pickRate,
-					banRate: stat.banRate,
-					games: stat.games,
-					image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`,
-					splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`
-				};
-			}).filter(c => c.name !== 'Unknown'); // Filter out unknown champions
-			
-			// Get top 5 for spotlight
-			spotlightChampions = champions.slice(0, 5).map((c, i) => ({
-				...c,
-				tag: i === 0 ? `God Tier • ${c.winRate}% WR` : `${c.tier} Tier`,
-				tagColor: i === 0 ? '#c8aa6e' : ['#a855f7', '#3b82f6', '#10b981', '#e84057'][i - 1]
-			}));
-			
-			filteredChampions = champions;
-			loading = false;
-			console.log('✅ Loaded', champions.length, 'champions for', selectedRank, selectedRole);
-			
-		} catch (error) {
-			console.error('❌ Error loading champions:', error);
-			loading = false;
+		// Prevent multiple simultaneous loads
+		if (loadPromise) {
+			return loadPromise;
 		}
+		
+		loadPromise = (async () => {
+			try {
+				loading = true;
+				
+				// Only fetch version once
+				if (!latestVersion) {
+					const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+					const versions = await versionRes.json();
+					latestVersion = versions[0];
+				}
+				
+				// Only fetch champion names once
+				if (Object.keys(championNames).length === 0) {
+					const champDataRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
+					const champData = await champDataRes.json();
+					
+					// Build championId -> name/key mapping
+					Object.values(champData.data).forEach(champ => {
+						championNames[champ.key] = {
+							id: champ.id,
+							name: champ.name,
+							key: champ.key
+						};
+					});
+				}
+				
+				// Fetch stats from our API
+				const metaRes = await fetch(`/api/champions-meta?rank=${selectedRank}&role=${selectedRole}`);
+				const metaData = await metaRes.json();
+				
+				if (!metaData.success) {
+					throw new Error('Failed to fetch meta data');
+				}
+				
+				// Enrich with names and images
+				champions = metaData.champions.map((stat, index) => {
+					const champInfo = championNames[stat.championId] || { id: 'Unknown', name: 'Unknown' };
+					
+					return {
+						rank: index + 1,
+						championId: stat.championId,
+						id: champInfo.id,
+						name: champInfo.name,
+						tier: stat.tier,
+						winRate: stat.winRate,
+						pickRate: stat.pickRate,
+						banRate: stat.banRate,
+						games: stat.games,
+						image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`,
+						splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`
+					};
+				}).filter(c => c.name !== 'Unknown'); // Filter out unknown champions
+				
+				// Get top 5 for spotlight
+				spotlightChampions = champions.slice(0, 5).map((c, i) => ({
+					...c,
+					tag: i === 0 ? `God Tier • ${c.winRate}% WR` : `${c.tier} Tier`,
+					tagColor: i === 0 ? '#c8aa6e' : ['#a855f7', '#3b82f6', '#10b981', '#e84057'][i - 1]
+				}));
+				
+				filteredChampions = champions;
+				loading = false;
+				console.log('✅ Loaded', champions.length, 'champions for', selectedRank, selectedRole);
+				
+			} catch (error) {
+				console.error('❌ Error loading champions:', error);
+				loading = false;
+			} finally {
+				loadPromise = null;
+			}
+		})();
+		
+		return loadPromise;
 	}
 	
-	// Reload when filters change
-	$: if (selectedRank || selectedRole) {
-		loadChampions();
+	// Debounced reload when filters change
+	let filterTimeout;
+	$: {
+		if (selectedRank || selectedRole) {
+			clearTimeout(filterTimeout);
+			filterTimeout = setTimeout(() => {
+				loadChampions();
+			}, 300); // 300ms debounce
+		}
 	}
 
 	// Search filter (client-side)

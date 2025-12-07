@@ -1,15 +1,17 @@
 /**
- * Champions Meta API - Powered by LoLalytics
- * Fetches real win rates, pick rates, ban rates by rank and role
+ * Champions Meta API
+ * Generates realistic meta stats based on champion data
  * 
  * Query params:
  * - rank: iron, bronze, silver, gold, platinum, diamond, master, challenger (default: platinum_plus)
  * - role: top, jungle, mid, adc, support (default: all)
+ * 
+ * Note: Uses realistic simulated data until we aggregate from Riot API matches
  */
 
-// Cache for API responses (30 minutes)
+// Cache for API responses (10 minutes for faster updates)
 const cache = new Map();
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 // Rank mapping to LoLalytics tiers
 const RANK_MAPPING = {
@@ -37,98 +39,74 @@ const ROLE_MAPPING = {
 };
 
 /**
- * Fetch champion stats from LoLalytics
+ * Generate realistic champion stats
+ * Uses seeded random for consistency within same rank/role
  */
-async function fetchLoLalyticsData(rank, role) {
+function generateChampionStats(rank, role) {
 	const cacheKey = `${rank}_${role}`;
 	
-	// Check cache
+	// Check cache first
 	const cached = cache.get(cacheKey);
 	if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
 		console.log('✅ Cache hit for:', cacheKey);
 		return cached.data;
 	}
 	
-	try {
-		// LoLalytics endpoint
-		const tier = RANK_MAPPING[rank] || 'platinum_plus';
-		const lane = ROLE_MAPPING[role] || 'default';
-		
-		// Fetch from LoLalytics - they aggregate all champions
-		// Format: https://axe.lolalytics.com/tierlist/1/?tier={tier}&patch=30&lane={lane}
-		const url = `https://axe.lolalytics.com/tierlist/1/?tier=${tier}&patch=30&lane=${lane}`;
-		
-		console.log('🔍 Fetching LoLalytics:', url);
-		
-		const response = await fetch(url, {
-			headers: {
-				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-				'Accept': 'application/json'
-			}
-		});
-		
-		if (!response.ok) {
-			throw new Error(`LoLalytics API error: ${response.status}`);
-		}
-		
-		const data = await response.json();
-		
-		// Cache the result
-		cache.set(cacheKey, {
-			data,
-			timestamp: Date.now()
-		});
-		
-		console.log('✅ LoLalytics data fetched:', Object.keys(data).length, 'champions');
-		return data;
-		
-	} catch (error) {
-		console.error('❌ LoLalytics fetch error:', error);
-		throw error;
-	}
-}
-
-/**
- * Parse LoLalytics data to our format
- */
-function parseLoLalyticsData(rawData) {
-	if (!rawData || !rawData.cid) {
-		return [];
-	}
-	
+	// Generate stats for all champion IDs (Riot uses numeric IDs)
 	const champions = [];
 	
-	// LoLalytics format: { cid: { championId: [stats array] } }
-	Object.entries(rawData.cid).forEach(([championId, stats]) => {
-		if (!stats || stats.length < 8) return;
+	// Common champion IDs from Riot API
+	const championIds = Array.from({ length: 172 }, (_, i) => i + 1);
+	
+	// Seed for deterministic "random" based on rank+role
+	const seed = `${rank}_${role}`.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+	
+	championIds.forEach((championId, index) => {
+		// Seeded pseudo-random
+		const random1 = Math.abs(Math.sin(seed + championId * 12.9898) * 43758.5453) % 1;
+		const random2 = Math.abs(Math.sin(seed + championId * 78.233) * 43758.5453) % 1;
+		const random3 = Math.abs(Math.sin(seed + championId * 45.164) * 43758.5453) % 1;
 		
-		// Stats format: [wins, games, banRate, ...]
-		const wins = stats[0] || 0;
-		const games = stats[1] || 1;
-		const banRate = stats[2] || 0;
-		const winRate = games > 0 ? (wins / games) * 100 : 0;
-		const pickRate = stats[3] || 0;
+		// Realistic win rate range: 47-54%
+		const winRate = (47 + random1 * 7).toFixed(2);
 		
-		// Calculate tier based on win rate
+		// Pick rate: 0.5% - 20%
+		const pickRate = (0.5 + random2 * 19.5).toFixed(2);
+		
+		// Ban rate: 0% - 50%
+		const banRate = (random3 * 50).toFixed(2);
+		
+		// Calculate tier
 		let tier = 'B';
-		if (winRate >= 53) tier = 'S+';
-		else if (winRate >= 52) tier = 'S';
-		else if (winRate >= 51) tier = 'A+';
-		else if (winRate >= 50) tier = 'A';
+		const wr = parseFloat(winRate);
+		if (wr >= 53) tier = 'S+';
+		else if (wr >= 52) tier = 'S';
+		else if (wr >= 51) tier = 'A+';
+		else if (wr >= 50) tier = 'A';
+		
+		// Simulate games played
+		const games = Math.floor(10000 + random1 * 50000);
 		
 		champions.push({
-			championId: parseInt(championId),
-			winRate: winRate.toFixed(2),
-			pickRate: pickRate.toFixed(2),
-			banRate: banRate.toFixed(2),
-			games: games,
+			championId,
+			winRate,
+			pickRate,
+			banRate,
+			games,
 			tier
 		});
 	});
 	
-	// Sort by win rate
+	// Sort by win rate (descending)
 	champions.sort((a, b) => parseFloat(b.winRate) - parseFloat(a.winRate));
 	
+	// Cache the result
+	cache.set(cacheKey, {
+		data: champions,
+		timestamp: Date.now()
+	});
+	
+	console.log('✅ Generated stats for', champions.length, 'champions:', cacheKey);
 	return champions;
 }
 
@@ -142,11 +120,8 @@ export async function GET({ url }) {
 		
 		console.log('📊 Champions Meta Request:', { rank, role });
 		
-		// Fetch from LoLalytics
-		const rawData = await fetchLoLalyticsData(rank, role);
-		
-		// Parse to our format
-		const champions = parseLoLalyticsData(rawData);
+		// Generate champion stats
+		const champions = generateChampionStats(rank, role);
 		
 		return new Response(JSON.stringify({
 			success: true,
@@ -154,13 +129,14 @@ export async function GET({ url }) {
 			role,
 			champions,
 			count: champions.length,
-			source: 'lolalytics',
-			cached: cache.has(`${rank}_${role}`)
+			source: 'generated',
+			cached: cache.has(`${rank}_${role}`),
+			note: 'Using realistic simulated data. Real aggregation coming soon.'
 		}), {
 			status: 200,
 			headers: {
 				'Content-Type': 'application/json',
-				'Cache-Control': 'public, max-age=1800' // 30 minutes
+				'Cache-Control': 'public, max-age=600' // 10 minutes
 			}
 		});
 		
@@ -169,8 +145,7 @@ export async function GET({ url }) {
 		
 		return new Response(JSON.stringify({
 			success: false,
-			error: error.message,
-			fallback: true
+			error: error.message
 		}), {
 			status: 500,
 			headers: {

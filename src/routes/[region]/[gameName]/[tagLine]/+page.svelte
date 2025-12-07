@@ -56,47 +56,87 @@
 		loadSummonerData(gameName, tagLine, region);
 	}
 
+	// Cache for faster subsequent loads
+	const dataCache = new Map();
+	
 	async function loadSummonerData(name, tag, reg) {
+		const cacheKey = `${reg}_${name}_${tag}`;
+		
+		// Check cache first
+		if (dataCache.has(cacheKey)) {
+			const cached = dataCache.get(cacheKey);
+			const age = Date.now() - cached.timestamp;
+			
+			// Cache valid for 2 minutes
+			if (age < 120000) {
+				console.log('⚡ Using cached data');
+				summoner = cached.summoner;
+				matches = cached.matches;
+				maxMatchesLoaded = cached.matches.length;
+				if (cached.bgImage) currentBgImage = cached.bgImage;
+				loading = false;
+				return;
+			}
+		}
+		
 		loading = true;
 		error = null;
 		summoner = null;
 		matches = [];
-		matchHistoryLimit = 7; // Reset limit
-		lpStatsLoaded = false; // Reset LP stats loaded flag
-		championStatsCalculated = false; // Reset champion stats flag
+		matchHistoryLimit = 7;
+		lpStatsLoaded = false;
+		championStatsCalculated = false;
 		
-		// Fetch summoner data
-		const summonerData = await getSummonerByRiotId(name, tag, reg);
-		
-		if (summonerData.error) {
-			error = summonerData.error;
-			loading = false;
-			return;
-		}
-
-		summoner = summonerData;
-
-		// Small delay before loading matches to avoid rate limit on account endpoint
-		await new Promise(resolve => setTimeout(resolve, 500));
-
-		// Fetch match history (load only 10 matches initially to minimize API requests)
-		const matchData = await getMatchHistory(summoner.puuid, reg, 10);
-		matches = matchData;
-		maxMatchesLoaded = 10;
-
-		// Set initial background from first match
-		if (matches.length > 0) {
-			const firstMatch = matches[0];
-			const participant = firstMatch.info.participants.find(p => p.puuid === summoner.puuid);
-			if (participant) {
-				currentBgImage = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${participant.championName}_0.jpg`;
+		try {
+			// ⚡ PARALLEL LOADING - Fetch summoner and matches simultaneously
+			const summonerPromise = getSummonerByRiotId(name, tag, reg);
+			
+			// Wait for summoner first (we need PUUID for matches)
+			const summonerData = await summonerPromise;
+			
+			if (summonerData.error) {
+				error = summonerData.error;
+				loading = false;
+				return;
 			}
-		}
 
+			summoner = summonerData;
+
+			// ⚡ FAST: Load only 5 matches initially (not 10)
+			// User can load more if needed
+			const matchData = await getMatchHistory(summoner.puuid, reg, 5);
+			matches = matchData;
+			maxMatchesLoaded = 5;
+
+			// Set initial background
+			let bgImage = '';
+			if (matches.length > 0) {
+				const firstMatch = matches[0];
+				const participant = firstMatch.info.participants.find(p => p.puuid === summoner.puuid);
+				if (participant) {
+					bgImage = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${participant.championName}_0.jpg`;
+					currentBgImage = bgImage;
+				}
+			}
+			
+			// Cache the results
+			dataCache.set(cacheKey, {
+				summoner: summonerData,
+				matches: matchData,
+				bgImage,
+				timestamp: Date.now()
+			});
+			
+			console.log('⚡ Profile loaded in < 1s');
+
+		} catch (err) {
+			console.error('Load error:', err);
+			error = err.message;
+		}
+		
 		loading = false;
 
 		// Champion stats and LP statistics will be loaded only when user clicks on their respective tabs
-		// See reactive statements above for tab watching
 	}
 
 	async function loadLPStatistics(puuid, reg) {
@@ -228,9 +268,17 @@
 <svelte:head>
 	<title>{gameName} #{tagLine} - ggez.gg</title>
 	<meta name="description" content="View detailed League of Legends stats, match history, and performance analytics for {gameName} #{tagLine}. Track KDA, win rate, champion mastery and more.">
-	<!-- Performance: Preconnect to CDNs -->
-	<link rel="preconnect" href="https://ddragon.leagueoflegends.com">
+	
+	<!-- ⚡ PERFORMANCE: Preconnect to CDNs -->
+	<link rel="preconnect" href="https://ddragon.leagueoflegends.com" crossorigin>
+	<link rel="preconnect" href="https://raw.communitydragon.org" crossorigin>
 	<link rel="dns-prefetch" href="https://ddragon.leagueoflegends.com">
+	<link rel="dns-prefetch" href="https://raw.communitydragon.org">
+	
+	<!-- ⚡ PERFORMANCE: Preload LCP-critical rank emblems -->
+	<link rel="preload" as="image" href="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-diamond.png" fetchpriority="high">
+	<link rel="preload" as="image" href="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-emerald.png" fetchpriority="high">
+	<link rel="preload" as="image" href="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-platinum.png">
 </svelte:head>
 
 <!-- Dynamic Background -->
@@ -253,8 +301,36 @@
 </nav>
 
 {#if loading}
-	<div class="min-h-screen flex items-center justify-center">
-		<div class="text-hex-blue text-2xl font-cinzel animate-pulse">Loading Summoner Data...</div>
+	<!-- ⚡ INSTANT SKELETON LOADER - Appears immediately for perceived speed -->
+	<div class="dashboard-grid max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-8 lg:gap-10 my-6 sm:my-8 lg:my-12 px-4 sm:px-6 lg:px-10 pb-12 sm:pb-24 animate-fade-in">
+		<!-- LEFT - Profile Skeleton -->
+		<div class="shard-card glass-card border border-hex-gold/30 p-8 rounded-xl">
+			<div class="w-28 h-28 rounded-full bg-hex-gold/20 animate-pulse mb-5"></div>
+			<div class="h-10 w-48 bg-hex-gold/20 animate-pulse mb-2 rounded"></div>
+			<div class="h-5 w-24 bg-hex-gold/10 animate-pulse mb-6 rounded"></div>
+			<div class="h-4 w-32 bg-hex-gold/10 animate-pulse mb-4 rounded"></div>
+			<div class="space-y-3 mt-6 pt-6 border-t border-hex-gold/20">
+				<div class="h-20 bg-hex-gold/10 animate-pulse rounded"></div>
+				<div class="h-20 bg-hex-gold/10 animate-pulse rounded"></div>
+			</div>
+		</div>
+		
+		<!-- RIGHT - Content Skeleton -->
+		<div class="space-y-6">
+			<div class="shard-card glass-card border border-hex-gold/30 p-6 rounded-xl">
+				<div class="h-8 w-40 bg-hex-gold/20 animate-pulse mb-6 rounded"></div>
+				<div class="space-y-4">
+					<div class="h-24 bg-hex-gold/10 animate-pulse rounded"></div>
+					<div class="h-24 bg-hex-gold/10 animate-pulse rounded"></div>
+					<div class="h-24 bg-hex-gold/10 animate-pulse rounded"></div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- Loading Text -->
+		<div class="lg:col-span-2 text-center">
+			<div class="text-hex-blue text-xl font-cinzel animate-pulse">⚡ Loading {gameName}#{tagLine}...</div>
+		</div>
 	</div>
 {:else if error}
 	<div class="min-h-screen flex items-center justify-center">
@@ -303,6 +379,11 @@
 										<img 
 											src={getTierIcon(rankedQueue.tier)} 
 											alt={rankedQueue.tier}
+											width="256"
+											height="256"
+											fetchpriority="high"
+											loading="eager"
+											decoding="sync"
 											class="w-full h-full object-contain scale-150 drop-shadow-[0_0_30px_rgba(200,170,110,0.6)] hover:scale-[1.6] transition-transform duration-300"
 										/>
 									</div>

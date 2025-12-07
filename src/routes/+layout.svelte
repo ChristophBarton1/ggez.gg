@@ -2,17 +2,17 @@
   import '../app.css';
   import { onMount } from 'svelte';
 
-  // Register Service Worker for aggressive caching
+  // ⚡ PERFORMANCE FIX: Service Worker temporarily disabled due to corruption issues
+  // TODO: Re-implement with proper Workbox or modern caching strategy
   onMount(() => {
+    // Unregister any existing service workers to fix corruption
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/service-worker.js')
-        .then((registration) => {
-          console.log('✅ Service Worker registered:', registration.scope);
-        })
-        .catch((error) => {
-          console.error('❌ Service Worker registration failed:', error);
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister();
+          console.log('🧹 Unregistered buggy service worker');
         });
+      });
     }
   });
 </script>

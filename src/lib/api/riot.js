@@ -160,14 +160,15 @@ function delay(ms) {
 /**
  * Fetch matches in batches to respect rate limits
  * Development Key: 20 requests/second, 100 requests/2 minutes
+ * OPTIMIZED: Larger batches, shorter delays for lightning-fast loading
  */
-async function fetchMatchesInBatches(matchIds, routingValue, batchSize = 5, delayMs = 1000) {
+async function fetchMatchesInBatches(matchIds, routingValue, batchSize = 10, delayMs = 200) {
 	const matches = [];
 	
 	for (let i = 0; i < matchIds.length; i += batchSize) {
 		const batch = matchIds.slice(i, i + batchSize);
 		
-		console.log(`Fetching batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(matchIds.length / batchSize)}...`);
+		console.log(`⚡ Fetching batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(matchIds.length / batchSize)}...`);
 		
 		const batchPromises = batch.map(async (matchId) => {
 			const matchUrl = `https://${routingValue}.api.riotgames.com/lol/match/v5/matches/${matchId}`;

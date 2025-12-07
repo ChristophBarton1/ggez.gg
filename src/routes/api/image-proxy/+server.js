@@ -3,7 +3,7 @@
 
 import sharp from 'sharp';
 
-const CACHE_DURATION = 365 * 24 * 60 * 60; // 1 year in seconds
+const CACHE_DURATION = 31536000; // 1 year in seconds (365 days)
 const imageCache = new Map(); // In-memory cache
 
 /**

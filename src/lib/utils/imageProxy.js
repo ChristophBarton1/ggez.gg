@@ -1,74 +1,51 @@
 /**
- * 🖼️ Image Proxy für automatische WebP Konvertierung & Responsive Sizing
+ * ⚡ Image Proxy für automatische WebP Konvertierung & Aggressive Caching
  * 
- * Nutzt wsrv.nl (kostenloses CDN) für:
- * - Automatisches WebP/AVIF
- * - Responsive sizing
- * - Aggressive caching
+ * Nutzt UNSEREN eigenen Proxy (/api/image-proxy) für:
+ * - Automatisches WebP @ 80% quality
+ * - Responsive sizing (exact dimensions)
+ * - 1-JAHR Browser Cache (immutable)
+ * - In-memory Server Cache
+ * - Sharp image processing
  * 
- * Savings: ~70% kleinere Bilder für First Visit!
+ * Savings: ~70% kleinere Bilder + 963 KiB Cache Savings!
  */
 
 /**
- * Optimiere Riot CDN Image via wsrv.nl
+ * Optimiere Riot CDN Image via unseren eigenen Proxy
  * @param {string} riotUrl - Original Riot CDN URL
- * @param {object} options - Width, height, quality
+ * @param {object} options - Width, format
  * @returns {string} - Optimized image URL
  */
 export function optimizeRiotImage(riotUrl, options = {}) {
 	const {
 		width = null,
-		height = null,
-		quality = 85,
-		format = 'auto' // auto = WebP for supporting browsers, fallback to original
+		format = 'webp' // 'webp', 'avif', 'png'
 	} = options;
 
-	// wsrv.nl: Free image CDN with WebP support
-	// Docs: https://wsrv.nl/docs/
+	// Nutze unseren eigenen Image Proxy!
 	const params = new URLSearchParams();
+	params.set('url', encodeURIComponent(riotUrl));
+	if (width) params.set('w', width);
+	params.set('format', format);
 	
-	// Encode the Riot URL
-	params.append('url', riotUrl);
-	
-	// Responsive width
-	if (width) params.append('w', width);
-	if (height) params.append('h', height);
-	
-	// Quality (1-100)
-	params.append('q', quality);
-	
-	// Output format (webp, avif, auto)
-	if (format === 'auto') {
-		params.append('output', 'webp');
-		params.append('default', riotUrl); // Fallback to original
-	}
-	
-	// Optimization options
-	params.append('maxage', '7d'); // Cache for 7 days
-	params.append('fit', 'cover'); // Crop to fit
-	
-	return `https://wsrv.nl/?${params.toString()}`;
+	return `/api/image-proxy?${params.toString()}`;
 }
 
 /**
  * Champion Splash Image (optimiert für Match History)
- * Display: 214×126 → Request: 400×300 (2× retina)
  */
 export function getChampionSplash(championName, size = 'small') {
 	const baseUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championName}_0.jpg`;
 	
-	const sizes = {
-		small: { width: 400, height: 300 },  // für Match History
-		medium: { width: 800, height: 600 }, // für Hover/Preview
-		large: { width: 1200, height: 900 }  // für Hero Background
+	const widths = {
+		small: 400,   // Match History
+		medium: 800,  // Hover/Preview
+		large: 1200   // Hero Background
 	};
 	
-	const dimensions = sizes[size] || sizes.small;
-	
 	return optimizeRiotImage(baseUrl, {
-		width: dimensions.width,
-		height: dimensions.height,
-		quality: 85
+		width: widths[size] || widths.small
 	});
 }
 
@@ -80,45 +57,30 @@ export function getChampionSplashSrcset(championName) {
 	const baseUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championName}_0.jpg`;
 	
 	return {
-		// Original als fallback
-		src: optimizeRiotImage(baseUrl, { width: 400, quality: 85 }),
-		
-		// Responsive srcset
+		src: optimizeRiotImage(baseUrl, { width: 400 }),
 		srcset: [
-			`${optimizeRiotImage(baseUrl, { width: 214, quality: 80 })} 214w`,
-			`${optimizeRiotImage(baseUrl, { width: 400, quality: 85 })} 400w`,
-			`${optimizeRiotImage(baseUrl, { width: 600, quality: 85 })} 600w`
+			`${optimizeRiotImage(baseUrl, { width: 214 })} 214w`,
+			`${optimizeRiotImage(baseUrl, { width: 400 })} 400w`,
+			`${optimizeRiotImage(baseUrl, { width: 600 })} 600w`
 		].join(', '),
-		
-		// Sizes (CSS media queries)
 		sizes: '(max-width: 640px) 100vw, 214px'
 	};
 }
 
 /**
- * Item Icon (optimiert)
+ * Item Icon (optimiert) - 30px für Match History
  */
 export function getItemIcon(itemId, version = '14.1.1') {
 	const baseUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${itemId}.png`;
-	
-	return optimizeRiotImage(baseUrl, {
-		width: 64,
-		height: 64,
-		quality: 90
-	});
+	return optimizeRiotImage(baseUrl, { width: 30 });
 }
 
 /**
- * Profile Icon (optimiert)
+ * Profile Icon (optimiert) - 96px
  */
 export function getProfileIcon(iconId, version = '14.1.1') {
 	const baseUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${iconId}.png`;
-	
-	return optimizeRiotImage(baseUrl, {
-		width: 128,
-		height: 128,
-		quality: 90
-	});
+	return optimizeRiotImage(baseUrl, { width: 96 });
 }
 
 /**
@@ -128,33 +90,22 @@ export function getProfileIcon(iconId, version = '14.1.1') {
 export function getChampionLoading(championName) {
 	const baseUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${championName}_0.jpg`;
 	
-	// Responsive srcset für verschiedene Bildschirmgrößen
 	return {
-		// Default src für alte Browser (Lighthouse optimierte Größe!)
-		src: optimizeRiotImage(baseUrl, { width: 174, quality: 80 }),
-		
-		// Responsive srcset
+		src: optimizeRiotImage(baseUrl, { width: 174 }),
 		srcset: [
-			`${optimizeRiotImage(baseUrl, { width: 174, quality: 80 })} 174w`,  // Mobile/Desktop default
-			`${optimizeRiotImage(baseUrl, { width: 308, quality: 85 })} 308w`,  // Retina/High-DPI
-			`${optimizeRiotImage(baseUrl, { width: 400, quality: 85 })} 400w`   // Large screens
+			`${optimizeRiotImage(baseUrl, { width: 174 })} 174w`,
+			`${optimizeRiotImage(baseUrl, { width: 308 })} 308w`,
+			`${optimizeRiotImage(baseUrl, { width: 400 })} 400w`
 		].join(', '),
-		
-		// Sizes (CSS media queries) - matched to actual display size!
 		sizes: '(max-width: 640px) 50vw, 174px'
 	};
 }
 
 /**
  * Background Image (für Homepage Hero)
- * Nur für statisches Bild, nicht für Video!
  */
 export function getBackgroundImage(imageUrl) {
-	return optimizeRiotImage(imageUrl, {
-		width: 1920,
-		height: 1080,
-		quality: 80
-	});
+	return optimizeRiotImage(imageUrl, { width: 1920 });
 }
 
 /**

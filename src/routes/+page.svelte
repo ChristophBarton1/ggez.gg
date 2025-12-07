@@ -41,6 +41,12 @@
 	}
 
 	onMount(() => {
+		// ⚡ Async font loading
+		const fontLink = document.createElement('link');
+		fontLink.rel = 'stylesheet';
+		fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap';
+		document.head.appendChild(fontLink);
+		
 		// Load champion stats
 		loadChampionStats();
 		
@@ -76,13 +82,14 @@
 <svelte:head>
 	<title>ggez.gg - Lightning-Fast League of Legends Stats</title>
 	<meta name="description" content="ggez.gg - The fastest way to check your League of Legends stats. Track performance, analyze matches, and climb faster with real-time summoner analytics.">
-	<!-- Performance: Preconnect to CDNs -->
+	
+	<!-- ⚡ PERFORMANCE: Early DNS resolution -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<!-- Preload critical fonts for LCP -->
-	<link rel="preload" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap" as="style">
-	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap">
-	<link rel="preconnect" href="https://wsrv.nl">
+	<link rel="preconnect" href="https://ddragon.leagueoflegends.com" crossorigin>
+	<link rel="preconnect" href="https://raw.communitydragon.org" crossorigin>
+	<link rel="dns-prefetch" href="https://wsrv.nl">
+	<!-- Font wird async in onMount() geladen -->
 </svelte:head>
 
 <!-- 

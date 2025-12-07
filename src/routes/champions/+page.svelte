@@ -1,22 +1,22 @@
 <script>
 	import { onMount } from 'svelte';
-	import { getChampionSplashSrcset } from '$lib/utils/imageProxy.js';
 
 	let champions = [];
 	let filteredChampions = [];
 	let loading = true;
 	let searchQuery = '';
-	let selectedRole = 'all';
+	let selectedTag = 'all';
 	let selectedDifficulty = 'all';
 
-	// Role filters
-	const roles = [
-		{ value: 'all', label: 'All Roles', icon: '🎮' },
-		{ value: 'top', label: 'Top', icon: '⚔️' },
-		{ value: 'jungle', label: 'Jungle', icon: '🌳' },
-		{ value: 'middle', label: 'Mid', icon: '✨' },
-		{ value: 'bottom', label: 'ADC', icon: '🏹' },
-		{ value: 'support', label: 'Support', icon: '🛡️' }
+	// Tag filters (based on actual Riot tags)
+	const tags = [
+		{ value: 'all', label: 'All Classes', icon: '🎮' },
+		{ value: 'Fighter', label: 'Fighter', icon: '⚔️' },
+		{ value: 'Tank', label: 'Tank', icon: '🛡️' },
+		{ value: 'Mage', label: 'Mage', icon: '✨' },
+		{ value: 'Assassin', label: 'Assassin', icon: '🗡️' },
+		{ value: 'Marksman', label: 'Marksman', icon: '🏹' },
+		{ value: 'Support', label: 'Support', icon: '💚' }
 	];
 
 	// Difficulty mapping
@@ -66,18 +66,19 @@
 		}
 	}
 
+	// Get optimized champion image URL (small square tiles for fast loading)
+	function getChampionTileUrl(championId) {
+		return `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${championId}.png`;
+	}
+
 	// Filter champions based on search and filters
 	$: {
 		filteredChampions = champions.filter(champ => {
 			const matchesSearch = champ.name.toLowerCase().includes(searchQuery.toLowerCase());
-			const matchesRole = selectedRole === 'all' || champ.tags.some(tag => 
-				tag.toLowerCase() === selectedRole || 
-				(selectedRole === 'middle' && tag.toLowerCase() === 'mage') ||
-				(selectedRole === 'bottom' && tag.toLowerCase() === 'marksman')
-			);
+			const matchesTag = selectedTag === 'all' || champ.tags.includes(selectedTag);
 			const matchesDifficulty = selectedDifficulty === 'all' || champ.difficulty === selectedDifficulty;
 			
-			return matchesSearch && matchesRole && matchesDifficulty;
+			return matchesSearch && matchesTag && matchesDifficulty;
 		});
 	}
 </script>
@@ -123,17 +124,17 @@
 				/>
 			</div>
 
-			<!-- Role Filter -->
+			<!-- Class Filter -->
 			<div class="flex gap-2 flex-wrap lg:flex-nowrap">
-				{#each roles as role}
+				{#each tags as tag}
 					<button
-						on:click={() => selectedRole = role.value}
-						class="px-4 py-2 rounded-lg border transition-all {selectedRole === role.value 
+						on:click={() => selectedTag = tag.value}
+						class="px-3 py-2 rounded-lg border transition-all text-sm {selectedTag === tag.value 
 							? 'bg-hex-gold text-black border-hex-gold' 
 							: 'bg-hex-dark/50 text-gray-300 border-hex-gold/30 hover:border-hex-gold/50'}"
 					>
-						<span class="mr-1">{role.icon}</span>
-						<span class="hidden sm:inline">{role.label}</span>
+						<span class="mr-1">{tag.icon}</span>
+						<span class="hidden sm:inline">{tag.label}</span>
 					</button>
 				{/each}
 			</div>
@@ -170,22 +171,18 @@
 	{:else}
 		<!-- Champions Grid -->
 		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-			{#each filteredChampions as champion}
-				{@const champImg = getChampionSplashSrcset(champion.id)}
-				
-				<div class="champion-card group">
-					<div class="relative aspect-[3/4] glass-card border border-white/10 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
-						<!-- Champion Image -->
+			{#each filteredChampions as champion, i}
+				<div class="champion-card group" style="--index: {i}">
+					<div class="relative aspect-square glass-card border border-white/10 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
+						<!-- Champion Image (optimized square tile) -->
 						<img 
-							src={champImg.src}
-							srcset={champImg.srcset}
-							sizes={champImg.sizes}
+							src={getChampionTileUrl(champion.id)}
 							alt={champion.name}
-							width="174"
-							height="316"
-							loading="lazy"
+							width="120"
+							height="120"
+							loading={i < 18 ? 'eager' : 'lazy'}
 							decoding="async"
-							class="absolute inset-0 w-full h-full object-cover grayscale-[0.3] transition-all duration-500 group-hover:scale-110 group-hover:grayscale-0"
+							class="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
 						/>
 						
 						<!-- Gradient Overlay -->
@@ -208,11 +205,11 @@
 						</div>
 
 						<!-- Champion Info -->
-						<div class="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
-							<h3 class="font-cinzel text-base sm:text-lg md:text-xl text-white mb-1 truncate">
+						<div class="absolute bottom-0 left-0 right-0 p-2 sm:p-3">
+							<h3 class="font-cinzel text-sm sm:text-base text-white mb-0.5 truncate leading-tight">
 								{champion.name}
 							</h3>
-							<p class="text-xs sm:text-sm text-gray-400 truncate">
+							<p class="text-[10px] sm:text-xs text-gray-400 truncate">
 								{champion.title}
 							</p>
 						</div>
@@ -237,12 +234,12 @@
 	}
 
 	.champion-card {
-		animation: fadeInUp 0.6s ease forwards;
+		animation: fadeInUp 0.4s ease forwards;
 		opacity: 0;
 	}
 
-	.champion-card:nth-child(n) {
-		animation-delay: calc(0.03s * var(--index, 0));
+	.champion-card {
+		animation-delay: calc(0.02s * var(--index, 0));
 	}
 
 	@keyframes fadeInUp {

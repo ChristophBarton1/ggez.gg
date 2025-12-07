@@ -19,5 +19,8 @@
     "terser": "^5.44.1",
     "vite": "^5.0.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "sharp": "^0.34.5"
+  }
 }

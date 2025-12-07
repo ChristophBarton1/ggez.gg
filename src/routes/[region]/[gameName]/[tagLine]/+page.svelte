@@ -7,6 +7,7 @@
 	import ChampionPerformanceChart from '$lib/components/ChampionPerformanceChart.svelte';
 	import LPGainsByChampion from '$lib/components/LPGainsByChampion.svelte';
 	import { getChampionSplashSrcset, getItemIcon, getProfileIcon } from '$lib/utils/imageProxy.js';
+	import { getRankEmblem, getChampionIcon } from '$lib/utils/imageOptimizer.js';
 
 	// Route params - reactive
 	$: region = $page.params.region;
@@ -280,7 +281,8 @@
 	}
 
 	function getTierIcon(tier) {
-		return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-${tier.toLowerCase()}.png`;
+		// ⚡ Use optimized WebP version (256px, ~70% smaller!)
+		return getRankEmblem(tier, 256);
 	}
 
 	function formatKDA(kills, deaths, assists) {
@@ -346,10 +348,10 @@
 	<link rel="dns-prefetch" href="https://ddragon.leagueoflegends.com">
 	<link rel="dns-prefetch" href="https://raw.communitydragon.org">
 	
-	<!-- ⚡ PERFORMANCE: Preload LCP-critical rank emblems -->
-	<link rel="preload" as="image" href="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-diamond.png" fetchpriority="high">
-	<link rel="preload" as="image" href="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-emerald.png" fetchpriority="high">
-	<link rel="preload" as="image" href="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-platinum.png">
+	<!-- ⚡ PERFORMANCE: Preload LCP-critical rank emblems (optimized WebP!) -->
+	<link rel="preload" as="image" href={getRankEmblem('diamond', 256)} fetchpriority="high" type="image/webp">
+	<link rel="preload" as="image" href={getRankEmblem('emerald', 256)} fetchpriority="high" type="image/webp">
+	<link rel="preload" as="image" href={getRankEmblem('platinum', 256)} type="image/webp">
 </svelte:head>
 
 <!-- Dynamic Background -->

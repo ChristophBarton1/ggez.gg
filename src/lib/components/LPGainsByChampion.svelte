@@ -89,7 +89,7 @@
 	}
 </script>
 
-<div class="lp-gains-container glass-card border border-hex-gold/30 p-6 rounded-lg mb-8 clip-tech-card">
+<div class="lp-gains-container glass-card border border-hex-gold/30 p-6 rounded-lg mb-8">
 	<div class="header mb-6 border-b border-hex-gold/20 pb-4">
 		<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
 			<div>
@@ -316,7 +316,7 @@
 		<div class="flex justify-center mt-6">
 			<button
 				on:click={loadMoreChampions}
-				class="load-more-champions-btn bg-hex-darker border border-hex-gold/30 text-hex-gold px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:bg-hex-gold/10 hover:border-hex-gold transition-all duration-300 clip-tech-btn"
+				class="load-more-champions-btn bg-hex-darker border border-hex-gold/30 text-hex-gold px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:bg-hex-gold/10 hover:border-hex-gold transition-all duration-300 rounded-lg"
 			>
 				Show More Champions ({sortedChampions.length - displayedChampions.length} remaining)
 			</button>
@@ -350,14 +350,6 @@
 
 	.sortable-header:active {
 		transform: scale(0.98);
-	}
-
-	.clip-tech-card {
-		clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
-	}
-
-	.clip-tech-btn {
-		clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 	}
 
 	.load-more-champions-btn {

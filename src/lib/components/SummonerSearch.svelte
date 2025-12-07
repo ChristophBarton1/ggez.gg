@@ -193,15 +193,14 @@
 			on:focus={handleFocus}
 			on:blur={handleBlur}
 			{placeholder}
-			class="search-input w-full {showRegionSelector ? 'pl-16 sm:pl-24' : 'pl-4 sm:pl-6'} pr-14 sm:pr-16 py-4 sm:py-5 md:py-6 text-center text-base sm:text-lg md:text-xl font-inter text-white glass-card border border-hex-gold/50 outline-none transition-all duration-500 clip-tech-input placeholder:text-gray-600 placeholder:font-light placeholder:text-xs sm:placeholder:text-sm md:placeholder:text-base focus:border-hex-blue focus:shadow-neon focus:scale-[1.02] focus:bg-opacity-85"
+			class="search-input w-full {showRegionSelector ? 'pl-16 sm:pl-24' : 'pl-4 sm:pl-6'} pr-14 sm:pr-16 py-4 sm:py-5 md:py-6 text-center text-base sm:text-lg md:text-xl font-inter text-white glass-card border border-hex-gold/50 rounded-xl outline-none transition-all duration-500 placeholder:text-gray-600 placeholder:font-light placeholder:text-xs sm:placeholder:text-sm md:placeholder:text-base focus:border-hex-blue focus:shadow-neon focus:scale-[1.02] focus:bg-opacity-85"
 		/>
 
 		<button 
 			on:click={handleSearch}
 			disabled={searching}
 			aria-label="Search summoner"
-			class="search-btn absolute right-2 sm:right-3 z-20 bg-hex-blue w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center border-none transition-all duration-300 hover:bg-white hover:shadow-neon-strong disabled:opacity-50 disabled:cursor-not-allowed"
-			style="clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);">
+			class="search-btn absolute right-2 sm:right-3 z-20 bg-hex-blue w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center border-none rounded-lg transition-all duration-300 hover:bg-white hover:shadow-neon-strong disabled:opacity-50 disabled:cursor-not-allowed">
 			<svg viewBox="0 0 24 24" class="w-5 h-5 sm:w-6 sm:h-6 fill-black">
 				<path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
 			</svg>

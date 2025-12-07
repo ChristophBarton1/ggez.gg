@@ -247,7 +247,7 @@
 			<SummonerSearch showRegionSelector={true} />
 		</div>
 	</div>
-	<button class="hidden sm:flex justify-self-end bg-transparent border border-hex-gold text-hex-gold px-4 md:px-8 py-2 font-cinzel cursor-pointer clip-tech-btn transition-all duration-300 hover:bg-hex-gold hover:text-black text-sm md:text-base">
+	<button class="hidden sm:flex justify-self-end bg-transparent border border-hex-gold text-hex-gold px-4 md:px-8 py-2 font-cinzel cursor-pointer rounded-lg transition-all duration-300 hover:bg-hex-gold hover:text-black text-sm md:text-base">
 		LOGIN
 	</button>
 </nav>
@@ -265,7 +265,7 @@
 	<div class="dashboard-grid max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-8 lg:gap-10 my-6 sm:my-8 lg:my-12 px-4 sm:px-6 lg:px-10 pb-12 sm:pb-24 animate-fade-in-up">
 		
 		<!-- LEFT COLUMN - Profile Card -->
-		<div class="shard-card glass-card border border-hex-gold/30 p-8 clip-tech-input">
+		<div class="shard-card glass-card border border-hex-gold/30 p-8 rounded-xl">
 			<!-- Summoner Icon -->
 			<div class="summoner-icon w-28 h-28 rounded-full border-3 border-hex-gold shadow-[0_0_25px_rgba(200,170,110,0.4)] mb-5 bg-cover"
 				 style="background-image: url('https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/{summoner.profileIconId}.png');">
@@ -382,7 +382,7 @@
 					{@const champImg = getChampionSplashSrcset(participant.championName)}
 				
 				<div 
-					class="match-row {win ? 'win' : 'loss'} flex flex-col sm:flex-row h-auto sm:h-32 glass-card border border-white/5 backdrop-blur-sm transition-all duration-300 relative overflow-hidden cursor-pointer clip-tech-card hover:scale-[1.02] hover:border-hex-gold hover:bg-opacity-85 hover:z-10"
+					class="match-row {win ? 'win' : 'loss'} flex flex-col sm:flex-row h-auto sm:h-32 glass-card border border-white/5 backdrop-blur-sm transition-all duration-300 relative overflow-hidden cursor-pointer rounded-lg hover:scale-[1.02] hover:border-hex-gold hover:bg-opacity-85 hover:z-10"
 					on:mouseenter={() => handleMatchHover(match)}
 					role="button"
 					tabindex="0"
@@ -461,7 +461,7 @@
 					{#if matchHistoryLimit < matches.length}
 						<button
 							on:click={showMoreMatchHistory}
-							class="show-more-btn bg-hex-darker border border-hex-gold/30 text-hex-gold px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:bg-hex-gold/10 hover:border-hex-gold transition-all duration-300 clip-tech-btn"
+							class="show-more-btn bg-hex-darker border border-hex-gold/30 text-hex-gold px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:bg-hex-gold/10 hover:border-hex-gold transition-all duration-300 rounded-lg"
 						>
 							Show More Matches ({matches.length - matchHistoryLimit} remaining)
 						</button>
@@ -471,7 +471,7 @@
 						<button
 							on:click={loadMoreMatches}
 							disabled={loadingMoreMatches}
-							class="load-more-btn bg-gradient-to-r from-hex-blue/20 to-hex-gold/20 border border-hex-blue/30 text-white px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:from-hex-blue/30 hover:to-hex-gold/30 hover:border-hex-gold transition-all duration-300 clip-tech-btn disabled:opacity-50 disabled:cursor-not-allowed"
+							class="load-more-btn bg-gradient-to-r from-hex-blue/20 to-hex-gold/20 border border-hex-blue/30 text-white px-8 py-3 font-cinzel text-sm uppercase tracking-wider hover:from-hex-blue/30 hover:to-hex-gold/30 hover:border-hex-gold transition-all duration-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{#if loadingMoreMatches}
 								Loading More Matches...
@@ -602,10 +602,6 @@
 	}
 
 	/* Button Styles */
-	.clip-tech-btn {
-		clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-	}
-
 	.show-more-btn,
 	.load-more-btn {
 		min-width: 250px;

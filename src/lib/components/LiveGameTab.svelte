@@ -137,7 +137,17 @@
 		<div class="no-game-state">
 			<div class="icon">🎮</div>
 			<h3>Not Currently in Game</h3>
-			<p>Start a game to see live recommendations!</p>
+			<p>Start a matchmaking game to see live recommendations!</p>
+			<div class="supported-modes">
+				<p class="modes-label">✅ Supported Game Types:</p>
+				<ul class="modes-list">
+					<li>Ranked (Solo/Duo, Flex)</li>
+					<li>Normal (Draft, Blind)</li>
+					<li>ARAM</li>
+					<li>URF & Featured Modes</li>
+				</ul>
+				<p class="modes-note">⚠️ Custom Games & Practice Tool are not supported by Riot's API</p>
+			</div>
 			<button on:click={checkLiveGame} class="refresh-btn">🔄 Refresh</button>
 		</div>
 	{:else}
@@ -334,6 +344,50 @@
 	.no-game-state p {
 		color: #888;
 		margin-bottom: 20px;
+	}
+
+	.supported-modes {
+		background: rgba(200, 170, 110, 0.1);
+		border: 1px solid rgba(200, 170, 110, 0.3);
+		border-radius: 8px;
+		padding: 20px;
+		margin: 20px 0;
+		max-width: 400px;
+	}
+
+	.modes-label {
+		color: #c8aa6e;
+		font-weight: bold;
+		margin-bottom: 10px;
+		font-size: 0.95rem;
+	}
+
+	.modes-list {
+		list-style: none;
+		padding: 0;
+		margin: 10px 0;
+		color: #fff;
+	}
+
+	.modes-list li {
+		padding: 5px 0;
+		padding-left: 20px;
+		position: relative;
+	}
+
+	.modes-list li:before {
+		content: "•";
+		position: absolute;
+		left: 5px;
+		color: #c8aa6e;
+	}
+
+	.modes-note {
+		color: #ff9800;
+		font-size: 0.85rem;
+		margin-top: 15px;
+		padding-top: 15px;
+		border-top: 1px solid rgba(255, 152, 0, 0.2);
 	}
 
 	/* Live Header */

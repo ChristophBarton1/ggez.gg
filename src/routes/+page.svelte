@@ -90,25 +90,116 @@
 			loop 
 			playsinline
 			on:canplay={() => videoReady = true}
-			class="w-full h-full object-cover {isFullscreen ? 'opacity-100' : 'opacity-60'}">
+			class="w-full h-full object-cover transition-opacity duration-1000 {isFullscreen ? 'opacity-100' : 'opacity-60'}">
 			<source src="/background.mp4" type="video/mp4">
 		</video>
 	{/if}
-	<div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80"></div>
+	<div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 transition-opacity duration-1000 {isFullscreen ? 'opacity-0' : 'opacity-100'}"></div>
 </div>
 
-<!-- Fullscreen Video Mode -->
+<!-- Video Controls (YouTube-Style) - Only in fullscreen mode -->
 {#if isFullscreen}
-	<div class="fixed inset-0 z-50 bg-black flex items-center justify-center">
-		<button 
-			on:click={exitFullscreen}
-			class="absolute top-6 right-6 z-50 text-white hover:text-hex-gold transition-colors">
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-			</svg>
-		</button>
+	<div class="fixed inset-0 z-50 flex flex-col">
+		<!-- Top Bar -->
+		<div class="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
+			<button 
+				on:click={exitFullscreen}
+				class="flex items-center gap-2 text-white hover:text-hex-gold transition-all px-4 py-2 rounded"
+				title="Back to Home">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+				</svg>
+				<span class="font-semibold">Back</span>
+			</button>
+			<h2 class="text-white text-xl font-bold">Season 2025: Summoner's Destiny</h2>
+			<div class="w-24"></div>
+		</div>
+
+		<!-- Bottom Controls Bar -->
+		<div class="mt-auto p-6 bg-gradient-to-t from-black/80 to-transparent">
+			<div class="flex items-center justify-between max-w-4xl mx-auto">
+				<!-- Left: Play/Pause + Mute -->
+				<div class="flex items-center gap-4">
+					<!-- Play/Pause Button -->
+					<button 
+						on:click={() => {
+							if (videoElement) {
+								if (videoElement.paused) {
+									videoElement.play();
+								} else {
+									videoElement.pause();
+								}
+							}
+						}}
+						class="text-white hover:text-hex-gold transition-all p-2"
+						title="Play/Pause">
+						<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+					</button>
+
+					<!-- Mute Button -->
+					<button 
+						on:click={toggleMute}
+						class="text-white hover:text-hex-gold transition-all p-2"
+						title="{videoMuted ? 'Unmute' : 'Mute'}">
+						{#if videoMuted}
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+							</svg>
+						{:else}
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+							</svg>
+						{/if}
+					</button>
+
+					<!-- Volume Slider -->
+					<input 
+						type="range" 
+						min="0" 
+						max="100" 
+						value="{videoMuted ? 0 : 100}"
+						on:input={(e) => {
+							if (videoElement) {
+								videoElement.volume = e.target.value / 100;
+								if (e.target.value > 0) {
+									videoMuted = false;
+									videoElement.muted = false;
+								} else {
+									videoMuted = true;
+									videoElement.muted = true;
+								}
+							}
+						}}
+						class="w-24 accent-hex-gold"
+					/>
+				</div>
+
+				<!-- Right: Fullscreen Toggle -->
+				<button 
+					on:click={() => {
+						if (document.fullscreenElement) {
+							document.exitFullscreen();
+						} else {
+							document.documentElement.requestFullscreen();
+						}
+					}}
+					class="text-white hover:text-hex-gold transition-all p-2"
+					title="Fullscreen">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+					</svg>
+				</button>
+			</div>
+		</div>
 	</div>
-{:else}
+{/if}
+
+<!-- Main UI (fades out in fullscreen) -->
+<div class="transition-opacity duration-1000 {isFullscreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}">
 	<!-- Riot Client Layout -->
 	<div class="min-h-screen flex flex-col">
 		
@@ -222,18 +313,18 @@
 					</div>
 				</div>
 
-				<!-- 4 Horizontal Cards (Riot Style) -->
+				<!-- 4 Horizontal Cards (Riot Style with Champion Images) -->
 				<div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
 					
-					<!-- Card 1 -->
+					<!-- Card 1: Champions - Yasuo -->
 					<a href="/champions" class="video-card group">
 						<div class="video-card-thumb">
-							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(200, 170, 110, 0.3) 0%, rgba(139, 69, 19, 0.4) 100%);">
-								<div class="text-center">
-									<div class="text-6xl mb-2">🏆</div>
-									<div class="text-sm text-white/60 font-semibold">CHAMPIONS</div>
-								</div>
-							</div>
+							<img 
+								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg"
+								alt="Yasuo"
+								class="video-thumbnail-img"
+							/>
+							<div class="video-thumbnail-overlay"></div>
 							<span class="video-badge time">2:45</span>
 						</div>
 						<div class="video-card-title">
@@ -241,15 +332,15 @@
 						</div>
 					</a>
 
-					<!-- Card 2 -->
+					<!-- Card 2: AI Coach - Zed -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
-							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(66, 135, 245, 0.3) 0%, rgba(0, 100, 255, 0.4) 100%);">
-								<div class="text-center">
-									<div class="text-6xl mb-2">🤖</div>
-									<div class="text-sm text-white/60 font-semibold">AI COACH</div>
-								</div>
-							</div>
+							<img 
+								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg"
+								alt="Zed"
+								class="video-thumbnail-img"
+							/>
+							<div class="video-thumbnail-overlay"></div>
 							<span class="video-badge dev">DEV</span>
 						</div>
 						<div class="video-card-title">
@@ -257,15 +348,15 @@
 						</div>
 					</div>
 
-					<!-- Card 3 -->
+					<!-- Card 3: Ranked - Akali -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
-							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(168, 85, 247, 0.4) 100%);">
-								<div class="text-center">
-									<div class="text-6xl mb-2">📊</div>
-									<div class="text-sm text-white/60 font-semibold">RANKED</div>
-								</div>
-							</div>
+							<img 
+								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Akali_0.jpg"
+								alt="Akali"
+								class="video-thumbnail-img"
+							/>
+							<div class="video-thumbnail-overlay"></div>
 							<span class="video-badge dev">DEV</span>
 						</div>
 						<div class="video-card-title">
@@ -273,15 +364,15 @@
 						</div>
 					</div>
 
-					<!-- Card 4 -->
+					<!-- Card 4: Swiftplay - Jinx -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
-							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.4) 100%);">
-								<div class="text-center">
-									<div class="text-6xl mb-2">⚡</div>
-									<div class="text-sm text-white/60 font-semibold">SWIFTPLAY</div>
-								</div>
-							</div>
+							<img 
+								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg"
+								alt="Jinx"
+								class="video-thumbnail-img"
+							/>
+							<div class="video-thumbnail-overlay"></div>
 							<span class="video-badge dev">DEV</span>
 						</div>
 						<div class="video-card-title">
@@ -293,7 +384,7 @@
 			</div>
 		</div>
 	</div>
-{/if}
+</div>
 
 <style>
 	/* Nav Link */
@@ -363,6 +454,20 @@
 		align-items: center;
 		justify-content: center;
 		background: linear-gradient(135deg, rgba(200, 170, 110, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+	}
+
+	.video-thumbnail-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center 20%;
+	}
+
+	.video-thumbnail-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+		pointer-events: none;
 	}
 
 	.video-badge {

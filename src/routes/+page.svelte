@@ -276,18 +276,23 @@
 				</h1>
 				
 				<!-- Subtitle -->
-				<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-6 md:mb-8 tracking-[1px] md:tracking-[2px] uppercase text-center">
+				<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-4 md:mb-8 tracking-[1px] md:tracking-[2px] uppercase text-center">
 					Lightning-Fast Summoner Analytics
 				</div>
 				
 				<!-- Search Bar -->
-				<div class="w-full max-w-2xl">
+				<div class="w-full max-w-2xl mb-12 md:mb-0">
 					<SummonerSearch />
 				</div>
 			</div>
 
 			<!-- Bottom Section: Trailer + Cards -->
 			<div class="mt-auto pb-4 md:pb-8">
+				<!-- Riot Copyright Disclaimer -->
+				<div class="mb-3 text-xs text-gray-500">
+					© 2024 Riot Games, Inc. All Rights Reserved. League of Legends and all related logos, characters, names and distinctive likenesses thereof are exclusive property of Riot Games, Inc.
+				</div>
+				
 				<!-- Trailer Info (LEFT BOTTOM) -->
 				<div class="mb-6 md:mb-8 max-w-xl">
 					<h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">Season 2025: Summoner's Destiny</h2>

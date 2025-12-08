@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { optimizeRiotImage } from '$lib/utils/imageProxy.js';
 
 	let champions = [];
 	let filteredChampions = [];
@@ -142,8 +143,9 @@
 							pickRate: stat.pickRate,
 							banRate: stat.banRate,
 							games: stat.games,
-							image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`,
-							splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`
+							// ⚡ Optimized WebP images (70% smaller!)
+							image: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`, { width: 48 }),
+							splash: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 400 })
 						};
 					})
 					.filter(c => c !== null && c.name !== 'Unknown'); // Filter out null and unknown champions

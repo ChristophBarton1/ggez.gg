@@ -144,6 +144,7 @@
 					<li>Ranked (Solo/Duo, Flex)</li>
 					<li>Normal (Draft, Blind)</li>
 					<li>ARAM</li>
+					<li>Arena (2v2, when available)</li>
 					<li>URF & Featured Modes</li>
 				</ul>
 				<p class="modes-note">⚠️ Custom Games & Practice Tool are not supported by Riot's API</p>

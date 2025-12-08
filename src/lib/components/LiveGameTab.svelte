@@ -21,7 +21,13 @@
 		error = null;
 
 		try {
+			console.log('🎮 Full summoner object:', summoner);
+			console.log('🎮 summoner.id:', summoner.id);
 			console.log('🎮 Checking live game for:', summoner.id);
+			
+			if (!summoner.id) {
+				throw new Error('Summoner ID is missing');
+			}
 			
 			const result = await getLiveGame(summoner.id, summoner.region || 'EUW');
 			
@@ -60,8 +66,8 @@
 		loadingAI = false;
 	}
 
-	// Find your participant
-	$: myParticipant = liveGame ? liveGame.participants.find(p => p.puuid === summoner.puuid) : null;
+	// Find your participant (using puuid since that's more reliable)
+	$: myParticipant = liveGame ? liveGame.participants.find(p => p.puuid === summoner?.puuid || p.summonerId === summoner?.id) : null;
 	$: myTeam = liveGame && myParticipant ? liveGame.participants.filter(p => p.teamId === myParticipant.teamId) : [];
 	$: enemyTeam = liveGame && myParticipant ? liveGame.participants.filter(p => p.teamId !== myParticipant.teamId) : [];
 

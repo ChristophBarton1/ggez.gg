@@ -543,7 +543,14 @@
 			<!-- Tab Content -->
 			{#if activeTab === 'liveGame'}
 				<!-- 🎮 LIVE GAME TAB -->
-				<LiveGameTab summoner={{...summoner, region}} />
+				{#if summoner}
+					<LiveGameTab summoner={{...summoner, region}} />
+				{:else}
+					<div class="loading-state">
+						<div class="spinner"></div>
+						<p>Loading summoner data...</p>
+					</div>
+				{/if}
 			{:else if activeTab === 'matchHistory'}
 				<!-- Match History Tab -->
 				<h2 class="history-title font-cinzel text-3xl mb-5 text-white border-b border-hex-gold/30 pb-2 inline-block">

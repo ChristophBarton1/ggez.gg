@@ -26,8 +26,11 @@ export async function handle({ event, resolve }) {
 
 	if (isStatic) {
 		response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+	} else if (url.pathname.startsWith('/api/image-proxy')) {
+		// ⚡ IMAGE PROXY: 1-year cache (images never change!)
+		response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 	} else if (url.pathname.startsWith('/api/')) {
-		// API responses: short cache with stale-while-revalidate
+		// Other API responses: short cache with stale-while-revalidate
 		response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=600');
 	} else {
 		// HTML pages: revalidate but allow stale

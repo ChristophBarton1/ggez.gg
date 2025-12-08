@@ -173,7 +173,8 @@
 				const firstMatch = matchData[0];
 				const participant = firstMatch.info.participants.find(p => p.puuid === summonerData.puuid);
 				if (participant) {
-					bgImage = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${participant.championName}_0.jpg`;
+					const { src } = getChampionSplashSrcset(participant.championName);
+					bgImage = src;
 				}
 			}
 			
@@ -262,7 +263,8 @@
 	function handleMatchHover(match) {
 		const participant = match.info.participants.find(p => p.puuid === summoner.puuid);
 		if (participant) {
-			currentBgImage = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${participant.championName}_0.jpg`;
+			const { src } = getChampionSplashSrcset(participant.championName);
+			currentBgImage = src;
 		}
 	}
 
@@ -428,7 +430,7 @@
 		<div class="shard-card glass-card border border-hex-gold/30 p-8 rounded-xl">
 			<!-- Summoner Icon -->
 			<div class="summoner-icon w-28 h-28 rounded-full border-3 border-hex-gold shadow-[0_0_25px_rgba(200,170,110,0.4)] mb-5 bg-cover"
-				 style="background-image: url('https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/{summoner.profileIconId}.png');">
+				 style="background-image: url('{getProfileIcon(summoner.profileIconId)}');">
 			</div>
 			
 			<!-- Name & Tag -->
@@ -593,10 +595,12 @@
 							{#each [participant.item0, participant.item1, participant.item2, participant.item3, participant.item4, participant.item5, participant.item6] as itemId}
 								{#if itemId && itemId > 0}
 									<img 
-										src="https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/{itemId}.png"
+										src={getItemIcon(itemId)}
 										alt="Item {itemId}"
 										class="item-icon w-8 h-8 sm:w-10 sm:h-10 bg-[#111] border border-gray-700 rounded object-cover"
 										loading="lazy"
+										width="40"
+										height="40"
 										on:error={(e) => e.target.style.display = 'none'}
 									/>
 								{:else}

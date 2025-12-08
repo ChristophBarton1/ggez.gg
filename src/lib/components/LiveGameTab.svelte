@@ -6,6 +6,7 @@
 	import { getChampionIcon } from '$lib/utils/imageOptimizer.js';
 
 	export let summoner; // Summoner object with id, puuid, region
+	export let isInLiveGame = false; // Export to parent to show live indicator
 	
 	let loading = true;
 	let liveGame = null;
@@ -33,20 +34,23 @@
 			console.log('🎮 Calling getLiveGame with PUUID:', summoner.puuid);
 			
 			const result = await getLiveGame(summoner.puuid, summoner.region || 'EUW');
-			
+		
 			if (result.inGame) {
 				liveGame = result.gameData;
+				isInLiveGame = true; // Update parent state
 				console.log('✅ Live game found!', liveGame);
 				
 				// Auto-fetch AI recommendations
 				await getAI();
 			} else {
 				liveGame = null;
+				isInLiveGame = false; // Update parent state
 				console.log('❌ Not in game');
 			}
 		} catch (err) {
 			console.error('Live game check error:', err);
 			error = err.message;
+			isInLiveGame = false; // Update parent state on error
 		}
 
 		loading = false;

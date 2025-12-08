@@ -34,6 +34,7 @@
 	
 	// Tab state
 	let activeTab = 'matchHistory';
+	let isInLiveGame = false; // Track if player is currently in a live game
 	
 	// Track which data has been loaded
 	let championStatsCalculated = false;
@@ -383,7 +384,7 @@
 <nav class="sticky top-0 z-50 flex flex-col sm:grid sm:grid-cols-[150px_1fr_150px] md:grid-cols-[200px_1fr_200px] items-center gap-3 sm:gap-0 px-4 sm:px-6 md:px-10 py-3 sm:py-5 backdrop-blur-xl border-b border-hex-gold/30 bg-hex-darker/95">
 	<div class="flex items-center gap-2">
 		<a href="/" class="font-cinzel text-xl sm:text-2xl text-hex-gold tracking-[1px] sm:tracking-[2px] no-underline hover:text-white transition-colors">
-			EASY GAME
+			EZ.GG
 		</a>
 		{#if refreshing}
 			<div class="flex items-center gap-1 text-hex-blue text-xs animate-pulse">
@@ -461,67 +462,63 @@
 				Level: <span class="text-white font-bold">{summoner.summonerLevel}</span>
 			</div>
 
-			<!-- Personal Ratings Section -->
+			<!-- Personal Ratings Section - COMPACT -->
 			{#if summoner.ranked && summoner.ranked.length > 0}
 				<div class="mt-6 pt-6 border-t border-hex-gold/20">
 					<h3 class="font-cinzel text-hex-gold text-sm uppercase tracking-wider mb-4">Personal Ratings</h3>
 					
-					<!-- Ranked Queues -->
-					<div class="space-y-4">
-						{#each summoner.ranked as rankedQueue}
-							{@const winrate = ((rankedQueue.wins / (rankedQueue.wins + rankedQueue.losses)) * 100).toFixed(1)}
-							
-							<div class="glass-card border border-hex-gold/20 p-5 rounded-lg hover:border-hex-gold/50 hover:shadow-[0_0_25px_rgba(200,170,110,0.2)] transition-all duration-300 text-center">
-								<!-- Queue Name Header -->
-								<div class="text-xs text-hex-blue uppercase tracking-wide mb-4 font-semibold">
-									{getQueueName(rankedQueue.queueType)}
-								</div>
+					<!-- Compact Ranked Display -->
+					<div class="glass-card border border-hex-gold/20 p-4 rounded-lg hover:border-hex-gold/50 hover:shadow-[0_0_25px_rgba(200,170,110,0.2)] transition-all duration-300">
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							{#each summoner.ranked as rankedQueue}
+								{@const winrate = ((rankedQueue.wins / (rankedQueue.wins + rankedQueue.losses)) * 100).toFixed(1)}
 								
-								<!-- Centered Column Layout -->
-								<div class="flex flex-col items-center">
-									<!-- MASSIVE Tier Icon on TOP -->
-									<div class="mb-4 relative w-64 h-64 flex items-center justify-center">
+								<div class="flex items-center gap-3 p-3 rounded-lg bg-hex-darker/50 hover:bg-hex-darker/80 transition-all">
+									<!-- Small Tier Icon -->
+									<div class="relative w-16 h-16 flex-shrink-0">
 										<img 
 											src={getTierIcon(rankedQueue.tier)} 
 											alt={rankedQueue.tier}
-											width="256"
-											height="256"
-											fetchpriority="high"
-											loading="eager"
-											decoding="sync"
-											class="w-full h-full object-contain scale-150 drop-shadow-[0_0_30px_rgba(200,170,110,0.6)] hover:scale-[1.6] transition-transform duration-300"
+											width="64"
+											height="64"
+											class="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(200,170,110,0.4)]"
 										/>
 									</div>
 									
-									<!-- Rank Info BELOW Icon -->
-									<div class="w-full">
-										<!-- Rank & Division - BIG -->
-										<div class="font-cinzel text-white text-2xl mb-2 tracking-wide">
+									<!-- Rank Info -->
+									<div class="flex-1 min-w-0">
+										<!-- Queue Name -->
+										<div class="text-xs text-hex-blue uppercase tracking-wide font-semibold mb-1">
+											{getQueueName(rankedQueue.queueType)}
+										</div>
+										
+										<!-- Rank & Division -->
+										<div class="font-cinzel text-white text-sm mb-1 truncate">
 											{rankedQueue.tier} {rankedQueue.rank}
 										</div>
 										
-										<!-- LP - Emphasized -->
-										<div class="text-base text-gray-300 mb-3">
-											<span class="text-hex-gold font-bold text-xl">{rankedQueue.leaguePoints}</span>
-											<span class="text-sm text-gray-400 ml-1">LP</span>
+										<!-- LP -->
+										<div class="text-xs text-gray-300 mb-2">
+											<span class="text-hex-gold font-bold">{rankedQueue.leaguePoints}</span>
+											<span class="text-gray-400 ml-1">LP</span>
 										</div>
 										
-										<!-- Stats Row -->
-										<div class="flex items-center justify-center gap-4 text-sm">
+										<!-- Stats -->
+										<div class="flex items-center gap-2 text-xs">
 											<div class="text-gray-400">
 												<span class="text-green-400 font-semibold">{rankedQueue.wins}W</span>
 												<span class="text-gray-500"> / </span>
 												<span class="text-red-400 font-semibold">{rankedQueue.losses}L</span>
 											</div>
-											<div class="h-4 w-px bg-gray-600"></div>
+											<div class="h-3 w-px bg-gray-600"></div>
 											<div class="text-hex-blue font-semibold">
-												{winrate}% WR
+												{winrate}%
 											</div>
 										</div>
 									</div>
 								</div>
-							</div>
-						{/each}
+							{/each}
+						</div>
 					</div>
 				</div>
 			{/if}
@@ -533,10 +530,13 @@
 			<!-- Tab Navigation -->
 			<div class="tabs-nav flex gap-4 mb-8 border-b border-hex-gold/20 pb-0">
 				<button 
-					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'liveGame' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'}"
+					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'liveGame' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'} flex items-center gap-2"
 					on:click={() => activeTab = 'liveGame'}
 				>
-					🔴 Live Game
+					{#if isInLiveGame}
+						<span class="live-dot"></span>
+					{/if}
+					Live Game
 				</button>
 				<button 
 					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'matchHistory' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'}"
@@ -562,7 +562,7 @@
 			{#if activeTab === 'liveGame'}
 				<!-- 🎮 LIVE GAME TAB -->
 				{#if summoner}
-					<LiveGameTab summoner={{...summoner, region}} />
+					<LiveGameTab summoner={{...summoner, region}} bind:isInLiveGame={isInLiveGame} />
 				{:else}
 					<div class="loading-state">
 						<div class="spinner"></div>
@@ -778,6 +778,28 @@
 	.match-champ-img {
 		-webkit-mask-image: linear-gradient(to right, black 50%, transparent 100%);
 		mask-image: linear-gradient(to right, black 40%, transparent 100%);
+	}
+
+	/* Live Game Indicator Dot */
+	.live-dot {
+		width: 8px;
+		height: 8px;
+		background: #ff4444;
+		border-radius: 50%;
+		display: inline-block;
+		animation: live-pulse 1.5s ease-in-out infinite;
+		box-shadow: 0 0 8px #ff4444;
+	}
+
+	@keyframes live-pulse {
+		0%, 100% { 
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% { 
+			opacity: 0.4;
+			transform: scale(0.9);
+		}
 	}
 
 	/* Tab Navigation Styles */

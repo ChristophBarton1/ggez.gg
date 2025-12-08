@@ -7,6 +7,7 @@
 	let videoMuted = true;
 	let videoElement;
 	let isFullscreen = false;
+	let isPageFullscreen = false;
 
 	function toggleMute() {
 		if (videoElement) {
@@ -38,6 +39,12 @@
 		fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap';
 		document.head.appendChild(fontLink);
 		
+		// Track fullscreen changes
+		const handleFullscreenChange = () => {
+			isPageFullscreen = !!document.fullscreenElement;
+		};
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		
 		// Preload video
 		const preloadVideo = () => {
 			showVideo = true;
@@ -53,6 +60,7 @@
 
 		return () => {
 			clearTimeout(fallback);
+			document.removeEventListener('fullscreenchange', handleFullscreenChange);
 			window.removeEventListener('scroll', preloadVideo);
 			window.removeEventListener('mousemove', preloadVideo);
 			window.removeEventListener('click', preloadVideo);
@@ -204,30 +212,27 @@
 	<div class="min-h-screen flex flex-col">
 		
 		<!-- Top Nav Bar (Riot Style) -->
-		<nav class="flex items-center justify-between px-8 py-4 bg-black/40 backdrop-blur-md border-b border-white/10">
+		<nav class="flex items-center justify-between px-4 md:px-8 py-3 md:py-4 bg-black/40 backdrop-blur-md border-b border-white/10">
 			<!-- Logo -->
-			<div class="flex items-center gap-8">
-				<a href="/" class="font-cinzel text-2xl text-hex-gold tracking-[2px] hover:text-white transition-colors">
+			<div class="flex items-center gap-3 md:gap-8">
+				<a href="/" class="font-cinzel text-lg md:text-2xl text-hex-gold tracking-[2px] hover:text-white transition-colors">
 					GGEZ.GG
 				</a>
 				
-				<!-- Nav Links -->
-				<div class="hidden md:flex items-center gap-1">
-					<a href="/" class="nav-link">Overview</a>
+				<!-- Nav Links - Hidden on mobile -->
+				<div class="hidden sm:flex items-center gap-2">
+					<a href="/" class="nav-link">Home</a>
 					<a href="/champions" class="nav-link">Champions</a>
-					<a href="/" class="nav-link">Stats</a>
-					<a href="/" class="nav-link">Esports</a>
 				</div>
 			</div>
 			
 			<!-- Right Icons -->
-			<div class="flex items-center gap-4">
+			<div class="flex items-center gap-2 md:gap-3">
 				<!-- Notification Bell -->
-				<button class="icon-btn relative">
-					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<button class="icon-btn" title="Notifications">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
 					</svg>
-					<span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
 				</button>
 				
 				<!-- Currency -->
@@ -243,15 +248,15 @@
 				</div>
 				
 				<!-- Profile -->
-				<button class="icon-btn">
-					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<button class="icon-btn" title="Profile">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 					</svg>
 				</button>
 				
 				<!-- Settings -->
-				<button class="icon-btn">
-					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<button class="icon-btn" title="Settings">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 					</svg>
@@ -260,18 +265,18 @@
 		</nav>
 
 		<!-- Main Content - Riot Layout -->
-		<div class="flex-1 flex flex-col p-8 max-w-[1600px] mx-auto w-full">
+		<div class="flex-1 flex flex-col p-4 md:p-8 max-w-[1600px] mx-auto w-full">
 			
-			<!-- Top: Title + Search Bar (Centered) -->
-			<div class="flex flex-col items-center justify-center mb-auto pt-12">
+			<!-- Top: Title + Search Bar (Better Centered) -->
+			<div class="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto w-full px-4">
 				<!-- Brand Title -->
-				<h1 class="font-cinzel text-5xl md:text-6xl lg:text-7xl mb-3 tracking-[5px] uppercase text-hex-gold"
+				<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3 md:mb-4 tracking-[3px] md:tracking-[5px] uppercase text-hex-gold text-center"
 				    style="text-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 					GGEZ.GG
 				</h1>
 				
 				<!-- Subtitle -->
-				<div class="text-base md:text-lg text-hex-blue mb-8 tracking-[2px] uppercase">
+				<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-6 md:mb-8 tracking-[1px] md:tracking-[2px] uppercase text-center">
 					Lightning-Fast Summoner Analytics
 				</div>
 				
@@ -282,30 +287,30 @@
 			</div>
 
 			<!-- Bottom Section: Trailer + Cards -->
-			<div class="mt-auto pb-8">
+			<div class="mt-auto pb-4 md:pb-8">
 				<!-- Trailer Info (LEFT BOTTOM) -->
-				<div class="mb-8 max-w-xl">
-					<h2 class="text-3xl font-bold text-white mb-3">Season 2025: Summoner's Destiny</h2>
-					<p class="text-gray-300 mb-6 leading-relaxed text-sm">
+				<div class="mb-6 md:mb-8 max-w-xl">
+					<h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">Season 2025: Summoner's Destiny</h2>
+					<p class="text-gray-300 mb-4 md:mb-6 leading-relaxed text-xs sm:text-sm">
 						Centuries ago, Zaahen made a choice. Now, Xin Zhao must make his own.
 					</p>
-					<div class="flex items-center gap-4">
+					<div class="flex items-center gap-3 md:gap-4 flex-wrap">
 						<button 
 							on:click={watchNow}
-							class="px-8 py-3 bg-white/90 hover:bg-white text-black font-bold rounded transition-all">
+							class="px-6 md:px-8 py-2 md:py-3 bg-white/90 hover:bg-white text-black font-bold rounded transition-all text-sm md:text-base">
 							Watch Now
 						</button>
 						<button 
 							on:click={toggleMute}
-							class="p-3 bg-white/10 hover:bg-white/20 rounded transition-all text-white"
+							class="p-2 md:p-3 bg-white/10 hover:bg-white/20 rounded transition-all text-white"
 							title="{videoMuted ? 'Unmute' : 'Mute'} video">
 							{#if videoMuted}
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
 								</svg>
 							{:else}
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
 								</svg>
 							{/if}
@@ -313,8 +318,8 @@
 					</div>
 				</div>
 
-				<!-- 4 Horizontal Cards (Riot Style with Champion Images) -->
-				<div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+				<!-- 4 Horizontal Cards (Riot Style with Champion Images) - Mobile Responsive -->
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
 					
 					<!-- Card 1: Champions - Yasuo -->
 					<a href="/champions" class="video-card group">
@@ -384,6 +389,30 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Floating Fullscreen Button (Bottom Right) - Mobile Optimized -->
+	<button 
+		on:click={() => {
+			if (document.fullscreenElement) {
+				document.exitFullscreen();
+			} else {
+				document.documentElement.requestFullscreen();
+			}
+		}}
+		class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 p-2.5 md:p-3 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 hover:border-hex-gold/50 rounded-full text-white hover:text-hex-gold transition-all shadow-lg hover:shadow-xl hover:scale-110"
+		title="{isPageFullscreen ? 'Exit Fullscreen (ESC)' : 'Fullscreen (F11)'}">
+		{#if isPageFullscreen}
+			<!-- Exit Fullscreen Icon -->
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+			</svg>
+		{:else}
+			<!-- Fullscreen Icon -->
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+			</svg>
+		{/if}
+	</button>
 </div>
 
 <style>

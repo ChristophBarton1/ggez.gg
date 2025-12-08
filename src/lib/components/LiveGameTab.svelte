@@ -74,8 +74,10 @@
 	$: myTeam = liveGame && myParticipant ? liveGame.participants.filter(p => p.teamId === myParticipant.teamId) : [];
 	$: enemyTeam = liveGame && myParticipant ? liveGame.participants.filter(p => p.teamId !== myParticipant.teamId) : [];
 
-	// Game duration
+	// Game duration and phase
 	$: gameLength = liveGame ? Math.floor((Date.now() - liveGame.gameStartTime) / 1000 / 60) : 0;
+	$: isChampSelect = liveGame && liveGame.gameLength === 0;
+	$: gamePhase = isChampSelect ? '📖 Champion Select' : `⏱️ ${gameLength} min`;
 
 	// Helper: Get champion name from ID
 	function getChampionName(championId) {
@@ -144,12 +146,12 @@
 			
 			<!-- Header -->
 			<div class="live-header">
-				<div class="live-indicator">
+				<div class="live-indicator {isChampSelect ? 'champ-select' : 'in-game'}">
 					<span class="pulse"></span>
-					LIVE
+					{isChampSelect ? 'CHAMP SELECT' : 'LIVE GAME'}
 				</div>
-				<div class="game-time">{gameLength} min</div>
-				<button on:click={checkLiveGame} class="refresh-small">🔄</button>
+				<div class="game-time">{gamePhase}</div>
+				<button on:click={checkLiveGame} class="refresh-small" title="Refresh">🔄</button>
 			</div>
 
 			<!-- Teams Display -->
@@ -351,16 +353,30 @@
 		align-items: center;
 		gap: 8px;
 		font-weight: bold;
-		color: #ff4444;
 		font-family: 'Cinzel', serif;
+	}
+
+	.live-indicator.champ-select {
+		color: #c8aa6e; /* Gold for Champion Select */
+	}
+
+	.live-indicator.in-game {
+		color: #ff4444; /* Red for Live Game */
 	}
 
 	.pulse {
 		width: 10px;
 		height: 10px;
-		background: #ff4444;
 		border-radius: 50%;
 		animation: pulse 1.5s ease-in-out infinite;
+	}
+
+	.champ-select .pulse {
+		background: #c8aa6e; /* Gold pulse */
+	}
+
+	.in-game .pulse {
+		background: #ff4444; /* Red pulse */
 	}
 
 	@keyframes pulse {

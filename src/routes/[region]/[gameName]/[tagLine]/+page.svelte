@@ -384,7 +384,7 @@
 <nav class="sticky top-0 z-50 flex flex-col sm:grid sm:grid-cols-[150px_1fr_150px] md:grid-cols-[200px_1fr_200px] items-center gap-3 sm:gap-0 px-4 sm:px-6 md:px-10 py-3 sm:py-5 backdrop-blur-xl border-b border-hex-gold/30 bg-hex-darker/95">
 	<div class="flex items-center gap-2">
 		<a href="/" class="font-cinzel text-xl sm:text-2xl text-hex-gold tracking-[1px] sm:tracking-[2px] no-underline hover:text-white transition-colors">
-			EZ.GG
+			GGEZ.GG
 		</a>
 		{#if refreshing}
 			<div class="flex items-center gap-1 text-hex-blue text-xs animate-pulse">

@@ -6,7 +6,7 @@
 	import MatchAIChat from '$lib/components/MatchAIChat.svelte';
 	import ChampionPerformanceChart from '$lib/components/ChampionPerformanceChart.svelte';
 	import LPGainsByChampion from '$lib/components/LPGainsByChampion.svelte';
-	import { getChampionSplashSrcset, getItemIcon, getProfileIcon } from '$lib/utils/imageProxy.js';
+	import { getChampionSplashSrcset, getChampionSplash, getItemIcon, getProfileIcon } from '$lib/utils/imageProxy.js';
 	import { getRankEmblem, getChampionIcon } from '$lib/utils/imageOptimizer.js';
 
 	// Route params - reactive
@@ -167,14 +167,14 @@
 			// Fetch matches
 			const matchData = await getMatchHistory(summonerData.puuid, reg, 5);
 
-			// Background image
+			// Background image (Full HD for sharp display!)
 			let bgImage = '';
 			if (matchData.length > 0) {
 				const firstMatch = matchData[0];
 				const participant = firstMatch.info.participants.find(p => p.puuid === summonerData.puuid);
 				if (participant) {
-					const { src } = getChampionSplashSrcset(participant.championName);
-					bgImage = src;
+					// Use 'large' (1200px) for sharp backgrounds!
+					bgImage = getChampionSplash(participant.championName, 'large');
 				}
 			}
 			
@@ -263,8 +263,8 @@
 	function handleMatchHover(match) {
 		const participant = match.info.participants.find(p => p.puuid === summoner.puuid);
 		if (participant) {
-			const { src } = getChampionSplashSrcset(participant.championName);
-			currentBgImage = src;
+			// Use 'large' (1200px) for sharp backgrounds!
+			currentBgImage = getChampionSplash(participant.championName, 'large');
 		}
 	}
 

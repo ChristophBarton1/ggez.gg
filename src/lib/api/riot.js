@@ -95,28 +95,25 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 		const accountData = await accountRes.json();
 		const { puuid, gameName: riotGameName, tagLine: riotTagLine } = accountData;
 
-		// Step 2: Get Summoner data by PUUID
+		// ⚡ PARALLEL LOADING: Steps 2 & 3 can run simultaneously!
 		const platform = PLATFORM_IDS[region] || 'euw1';
-		const summonerUrl = `https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
-		const summonerRes = await fetch(summonerUrl, {
-			headers: { 'X-Riot-Token': RIOT_API_KEY }
-		});
+		
+		const [summonerRes, rankedRes] = await Promise.all([
+			// Step 2: Get Summoner data by PUUID
+			fetch(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`, {
+				headers: { 'X-Riot-Token': RIOT_API_KEY }
+			}),
+			// Step 3: Get Ranked data (parallel!)
+			fetch(`https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`, {
+				headers: { 'X-Riot-Token': RIOT_API_KEY }
+			})
+		]);
 
 		if (!summonerRes.ok) {
 			throw new Error(`Summoner API error: ${summonerRes.status}`);
 		}
 
 		const summonerData = await summonerRes.json();
-
-		// Step 3: Get Ranked data (using by-puuid for better results)
-		console.log('🔍 Fetching ranked data for PUUID:', puuid);
-		console.log('🔍 Platform:', platform);
-		const rankedUrl = `https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`;
-		console.log('🔍 Ranked URL:', rankedUrl);
-		
-		const rankedRes = await fetch(rankedUrl, {
-			headers: { 'X-Riot-Token': RIOT_API_KEY }
-		});
 
 		let rankedData = [];
 		console.log('🔍 Ranked API Status:', rankedRes.status);

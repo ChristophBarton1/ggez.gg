@@ -141,17 +141,16 @@
 	}
 
 	function getTreeImageUrl(treeName) {
-		// Rune tree backgrounds
-		const treeMap = {
-			'Precision': 'Precision',
-			'Domination': 'Domination',
-			'Sorcery': 'Sorcery',
-			'Resolve': 'Resolve',
-			'Inspiration': 'Inspiration'
+		// Use simple DDragon URLs for rune tree icons
+		const treeIcons = {
+			'Precision': 'https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Precision/Precision.png',
+			'Domination': 'https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Domination/Domination.png',
+			'Sorcery': 'https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Sorcery/Sorcery.png',
+			'Resolve': 'https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Resolve/Resolve.png',
+			'Inspiration': 'https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/Inspiration/Inspiration.png'
 		};
 		
-		const tree = treeMap[treeName] || 'Precision';
-		return `https://ddragon.leagueoflegends.com/cdn/img/perk-images/Styles/${tree}/${tree}.png`;
+		return treeIcons[treeName] || treeIcons['Precision'];
 	}
 </script>
 
@@ -296,6 +295,8 @@
 											src={getItemIcon(item.id)}
 											alt={item.name}
 											class="item-img"
+											loading="lazy"
+											on:error={(e) => e.target.style.opacity = '0.3'}
 										/>
 										<div class="item-details">
 											<div class="item-name">{item.name}</div>
@@ -316,6 +317,8 @@
 											src={optimizeRiotImage(getTreeImageUrl(aiRecommendations.runes.primary), { width: 64 })}
 											alt={aiRecommendations.runes.primary}
 											class="tree-img"
+											loading="lazy"
+											on:error={(e) => console.error('Failed to load rune tree:', e.target.src)}
 										/>
 										<div class="tree-info">
 											<div class="tree-name">{aiRecommendations.runes.primary}</div>
@@ -327,6 +330,8 @@
 											src={optimizeRiotImage(getTreeImageUrl(aiRecommendations.runes.secondary), { width: 64 })}
 											alt={aiRecommendations.runes.secondary}
 											class="tree-img"
+											loading="lazy"
+											on:error={(e) => console.error('Failed to load rune tree:', e.target.src)}
 										/>
 										<div class="tree-info">
 											<div class="tree-name">{aiRecommendations.runes.secondary}</div>
@@ -703,6 +708,8 @@
 	.tree-img {
 		width: 64px;
 		height: 64px;
+		object-fit: contain;
+		filter: drop-shadow(0 0 10px rgba(200, 170, 110, 0.4));
 	}
 
 	.tree-name {

@@ -462,63 +462,31 @@
 				Level: <span class="text-white font-bold">{summoner.summonerLevel}</span>
 			</div>
 
-			<!-- Personal Ratings Section - COMPACT -->
+			<!-- Personal Ratings Section - SUPER COMPACT -->
 			{#if summoner.ranked && summoner.ranked.length > 0}
 				<div class="mt-6 pt-6 border-t border-hex-gold/20">
-					<h3 class="font-cinzel text-hex-gold text-sm uppercase tracking-wider mb-4">Personal Ratings</h3>
+					<h3 class="font-cinzel text-hex-gold text-xs uppercase tracking-wider mb-3">Ranked</h3>
 					
-					<!-- Compact Ranked Display -->
-					<div class="glass-card border border-hex-gold/20 p-4 rounded-lg hover:border-hex-gold/50 hover:shadow-[0_0_25px_rgba(200,170,110,0.2)] transition-all duration-300">
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							{#each summoner.ranked as rankedQueue}
-								{@const winrate = ((rankedQueue.wins / (rankedQueue.wins + rankedQueue.losses)) * 100).toFixed(1)}
-								
-								<div class="flex items-center gap-3 p-3 rounded-lg bg-hex-darker/50 hover:bg-hex-darker/80 transition-all">
-									<!-- Small Tier Icon -->
-									<div class="relative w-16 h-16 flex-shrink-0">
-										<img 
-											src={getTierIcon(rankedQueue.tier)} 
-											alt={rankedQueue.tier}
-											width="64"
-											height="64"
-											class="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(200,170,110,0.4)]"
-										/>
-									</div>
-									
-									<!-- Rank Info -->
-									<div class="flex-1 min-w-0">
-										<!-- Queue Name -->
-										<div class="text-xs text-hex-blue uppercase tracking-wide font-semibold mb-1">
-											{getQueueName(rankedQueue.queueType)}
-										</div>
-										
-										<!-- Rank & Division -->
-										<div class="font-cinzel text-white text-sm mb-1 truncate">
-											{rankedQueue.tier} {rankedQueue.rank}
-										</div>
-										
-										<!-- LP -->
-										<div class="text-xs text-gray-300 mb-2">
-											<span class="text-hex-gold font-bold">{rankedQueue.leaguePoints}</span>
-											<span class="text-gray-400 ml-1">LP</span>
-										</div>
-										
-										<!-- Stats -->
-										<div class="flex items-center gap-2 text-xs">
-											<div class="text-gray-400">
-												<span class="text-green-400 font-semibold">{rankedQueue.wins}W</span>
-												<span class="text-gray-500"> / </span>
-												<span class="text-red-400 font-semibold">{rankedQueue.losses}L</span>
-											</div>
-											<div class="h-3 w-px bg-gray-600"></div>
-											<div class="text-hex-blue font-semibold">
-												{winrate}%
-											</div>
-										</div>
+					<!-- Simple Ranked Cards -->
+					<div class="space-y-2">
+						{#each summoner.ranked as rankedQueue}
+							{@const winrate = ((rankedQueue.wins / (rankedQueue.wins + rankedQueue.losses)) * 100).toFixed(0)}
+							
+							<div class="ranked-mini-card">
+								<img 
+									src={getTierIcon(rankedQueue.tier)} 
+									alt={rankedQueue.tier}
+									class="rank-icon"
+								/>
+								<div class="rank-content">
+									<div class="rank-queue">{getQueueName(rankedQueue.queueType)}</div>
+									<div class="rank-tier">{rankedQueue.tier} {rankedQueue.rank}</div>
+									<div class="rank-stats">
+										{rankedQueue.leaguePoints} LP • {rankedQueue.wins}W {rankedQueue.losses}L • {winrate}%
 									</div>
 								</div>
-							{/each}
-						</div>
+							</div>
+						{/each}
 					</div>
 				</div>
 			{/if}
@@ -846,5 +814,59 @@
 		overflow-y: auto !important;
 		overflow-x: hidden;
 		min-height: 100vh;
+	}
+
+	/* Ranked Mini Cards - Super Clean */
+	.ranked-mini-card {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 12px;
+		background: rgba(1, 10, 19, 0.6);
+		backdrop-filter: blur(8px);
+		border: 1px solid rgba(200, 170, 110, 0.2);
+		border-radius: 8px;
+		transition: all 0.3s ease;
+	}
+
+	.ranked-mini-card:hover {
+		border-color: rgba(200, 170, 110, 0.4);
+		background: rgba(1, 10, 19, 0.8);
+		transform: translateX(4px);
+	}
+
+	.rank-icon {
+		width: 48px;
+		height: 48px;
+		object-fit: contain;
+		filter: drop-shadow(0 0 10px rgba(200, 170, 110, 0.3));
+	}
+
+	.rank-content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.rank-queue {
+		font-size: 0.65rem;
+		color: #0acbe6;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		font-weight: 700;
+		margin-bottom: 2px;
+	}
+
+	.rank-tier {
+		font-family: 'Cinzel', serif;
+		font-size: 0.9rem;
+		color: white;
+		font-weight: bold;
+		margin-bottom: 3px;
+	}
+
+	.rank-stats {
+		font-size: 0.7rem;
+		color: #888;
+		font-weight: 500;
 	}
 </style>

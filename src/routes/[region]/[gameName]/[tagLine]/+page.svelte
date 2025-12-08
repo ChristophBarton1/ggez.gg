@@ -92,52 +92,70 @@
 		const cacheKey = `${reg}_${name}_${tag}`;
 		let showedStaleData = false;
 		
-		// 🚀 PHASE 1: Check L1 cache (memory) - INSTANT!
+		// PHASE 1: Check L1 cache (memory) - INSTANT!
 		if (memoryCache.has(cacheKey)) {
 			const cached = memoryCache.get(cacheKey);
 			const age = Date.now() - cached.timestamp;
 			
 			// Fresh data? Show immediately, no loading!
 			if (age < CACHE_DURATION_FRESH) {
-				console.log('⚡ INSTANT: Memory cache (fresh)');
-				summoner = cached.summoner;
-				matches = cached.matches;
-				maxMatchesLoaded = cached.matches.length;
-				if (cached.bgImage) currentBgImage = cached.bgImage;
-				loading = false;
-				return; // Done! No API call needed
+				// Validate cached summoner has required fields
+				if (!cached.summoner?.id && !cached.summoner?.summonerId) {
+					console.log('Cached summoner invalid (missing ID), loading fresh data...');
+					// Don't use cache, continue to fetch fresh data
+				} else {
+					console.log('INSTANT: Memory cache (fresh)');
+					summoner = cached.summoner;
+					matches = cached.matches;
+					maxMatchesLoaded = cached.matches.length;
+					if (cached.bgImage) currentBgImage = cached.bgImage;
+					loading = false;
+					return; // Done! No API call needed
+				}
 			}
 			
 			// Stale but usable? Show immediately, refresh in background!
 			if (age < CACHE_DURATION_STALE) {
-				console.log('⚡ INSTANT: Showing stale data, refreshing in background...');
-				summoner = cached.summoner;
-				matches = cached.matches;
-				maxMatchesLoaded = cached.matches.length;
-				if (cached.bgImage) currentBgImage = cached.bgImage;
-				loading = false; // ← NO LOADING STATE!
-				refreshing = true; // Show subtle refresh indicator
-				showedStaleData = true;
-				// Continue to fetch fresh data below...
+				// Validate cached summoner has required fields
+				if (!cached.summoner?.id && !cached.summoner?.summonerId) {
+					console.log('Cached summoner invalid (missing ID), loading fresh data...');
+					// Don't use cache, continue to fetch fresh data
+				} else {
+					console.log('INSTANT: Showing stale data, refreshing in background...');
+					summoner = cached.summoner;
+					matches = cached.matches;
+					maxMatchesLoaded = cached.matches.length;
+					if (cached.bgImage) currentBgImage = cached.bgImage;
+					loading = false; // NO LOADING STATE!
+					refreshing = true; // Show subtle refresh indicator
+					showedStaleData = true;
+					// Continue to fetch fresh data below...
+				}
 			}
 		}
 		
-		// 🚀 PHASE 2: Check L2 cache (localStorage) - Still fast!
+		// PHASE 2: Check L2 cache (localStorage) - Still fast!
 		if (!showedStaleData && !summoner) {
 			const localData = loadFromLocalStorage(cacheKey);
 			if (localData) {
 				const age = Date.now() - localData.timestamp;
 				
 				if (age < CACHE_DURATION_STALE) {
-					console.log('⚡ INSTANT: LocalStorage cache');
-					summoner = localData.summoner;
-					matches = localData.matches;
-					maxMatchesLoaded = localData.matches.length;
-					if (localData.bgImage) currentBgImage = localData.bgImage;
-					loading = false;
-					refreshing = true;
-					showedStaleData = true;
-					// Continue to refresh...
+					// Validate cached summoner has required fields
+					if (!localData.summoner?.id && !localData.summoner?.summonerId) {
+						console.log('⚠️ LocalStorage summoner invalid (missing ID), loading fresh data...');
+						// Don't use cache, continue to fetch fresh data
+					} else {
+						console.log('⚡ INSTANT: LocalStorage cache');
+						summoner = localData.summoner;
+						matches = localData.matches;
+						maxMatchesLoaded = localData.matches.length;
+						if (localData.bgImage) currentBgImage = localData.bgImage;
+						loading = false;
+						refreshing = true;
+						showedStaleData = true;
+						// Continue to refresh...
+					}
 				}
 			}
 		}

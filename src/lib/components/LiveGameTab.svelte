@@ -22,19 +22,16 @@
 
 		try {
 			console.log('🎮 Full summoner object:', summoner);
-			console.log('🎮 summoner.id:', summoner.id);
-			console.log('🎮 summoner.summonerId:', summoner.summonerId);
+			console.log('🎮 summoner.puuid:', summoner.puuid);
 			
-			// Fallback: Use summonerId if id is missing (for cached data)
-			const encryptedSummonerId = summoner.id || summoner.summonerId;
-			
-			console.log('🎮 Using encryptedSummonerId:', encryptedSummonerId);
-			
-			if (!encryptedSummonerId) {
-				throw new Error('Summoner ID is missing (both id and summonerId are undefined)');
+			// Spectator API v5 uses PUUID, not Summoner ID!
+			if (!summoner.puuid) {
+				throw new Error('Summoner PUUID is missing');
 			}
 			
-			const result = await getLiveGame(encryptedSummonerId, summoner.region || 'EUW');
+			console.log('🎮 Calling getLiveGame with PUUID:', summoner.puuid);
+			
+			const result = await getLiveGame(summoner.puuid, summoner.region || 'EUW');
 			
 			if (result.inGame) {
 				liveGame = result.gameData;

@@ -114,6 +114,10 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 		}
 
 		const summonerData = await summonerRes.json();
+	
+		// 🔍 DEBUG: Check what Riot API returns
+		console.log('🔍 Summoner API Response:', summonerData);
+		console.log('🔍 summonerData.id:', summonerData.id);
 
 		let rankedData = [];
 		console.log('🔍 Ranked API Status:', rankedRes.status);
@@ -128,7 +132,7 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 			console.error('⚠️ Error Response:', errorText);
 		}
 
-		return {
+		const returnData = {
 			puuid,
 			id: summonerData.id, // encryptedSummonerId for Spectator API
 			summonerId: summonerData.id, // Alias for compatibility
@@ -141,6 +145,12 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 			region,
 			platform
 		};
+	
+		console.log('📤 Returning summoner object:', returnData);
+		console.log('📤 returnData.id:', returnData.id);
+		console.log('📤 returnData.summonerId:', returnData.summonerId);
+	
+		return returnData;
 
 	} catch (error) {
 		console.error('Riot API Error:', error);
@@ -426,15 +436,18 @@ export function parseSummonerInput(input) {
 }
 
 /**
- * GET LIVE GAME DATA (Spectator API)
+ * GET LIVE GAME DATA (Spectator API v5)
  * Check if summoner is currently in a game and get all player info
+ * @param {string} encryptedPUUID - The summoner's PUUID (NOT summoner ID!)
+ * @param {string} region - Region code (e.g. 'EUW')
  */
-export async function getLiveGame(encryptedSummonerId, region = 'EUW') {
+export async function getLiveGame(encryptedPUUID, region = 'EUW') {
 	try {
 		const platform = PLATFORM_IDS[region] || 'euw1';
-		const url = `https://${platform}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${encryptedSummonerId}`;
+		const url = `https://${platform}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${encryptedPUUID}`;
 		
-		console.log(' Fetching live game:', url);
+		console.log(' Fetching live game for PUUID:', encryptedPUUID);
+		console.log(' URL:', url);
 		
 		const res = await fetch(url, {
 			headers: { 'X-Riot-Token': RIOT_API_KEY }

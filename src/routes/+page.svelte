@@ -288,13 +288,8 @@
 
 			<!-- Bottom Section: Trailer + Cards -->
 			<div class="mt-auto pb-4 md:pb-8">
-				<!-- Riot Copyright Disclaimer -->
-				<div class="mb-3 text-xs text-gray-500">
-					© 2024 Riot Games, Inc. All Rights Reserved. League of Legends and all related logos, characters, names and distinctive likenesses thereof are exclusive property of Riot Games, Inc.
-				</div>
-				
-				<!-- Trailer Info (LEFT BOTTOM) -->
-				<div class="mb-6 md:mb-8 max-w-xl">
+				<!-- Trailer Info (LEFT BOTTOM) - Hidden on Mobile -->
+				<div class="hidden md:block mb-6 md:mb-8 max-w-xl">
 					<h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">Season 2025: Summoner's Destiny</h2>
 					<p class="text-gray-300 mb-4 md:mb-6 leading-relaxed text-xs sm:text-sm">
 						Centuries ago, Zaahen made a choice. Now, Xin Zhao must make his own.
@@ -305,18 +300,42 @@
 							class="px-6 md:px-8 py-2 md:py-3 bg-white/90 hover:bg-white text-black font-bold rounded transition-all text-sm md:text-base">
 							Watch Now
 						</button>
+						
+						<!-- Mute Button -->
 						<button 
 							on:click={toggleMute}
 							class="p-2 md:p-3 bg-white/10 hover:bg-white/20 rounded transition-all text-white"
 							title="{videoMuted ? 'Unmute' : 'Mute'} video">
 							{#if videoMuted}
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
 								</svg>
 							{:else}
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+								</svg>
+							{/if}
+						</button>
+
+						<!-- Fullscreen Button (Desktop Only) -->
+						<button 
+							on:click={() => {
+								if (document.fullscreenElement) {
+									document.exitFullscreen();
+								} else {
+									document.documentElement.requestFullscreen();
+								}
+							}}
+							class="p-2 md:p-3 bg-white/10 hover:bg-white/20 rounded transition-all text-white"
+							title="{isPageFullscreen ? 'Exit Fullscreen (ESC)' : 'Fullscreen (F11)'}">
+							{#if isPageFullscreen}
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+								</svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
 								</svg>
 							{/if}
 						</button>
@@ -395,29 +414,16 @@
 		</div>
 	</div>
 
-	<!-- Floating Fullscreen Button (Bottom Right) - Mobile Optimized -->
-	<button 
-		on:click={() => {
-			if (document.fullscreenElement) {
-				document.exitFullscreen();
-			} else {
-				document.documentElement.requestFullscreen();
-			}
-		}}
-		class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 p-2.5 md:p-3 bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/20 hover:border-hex-gold/50 rounded-full text-white hover:text-hex-gold transition-all shadow-lg hover:shadow-xl hover:scale-110"
-		title="{isPageFullscreen ? 'Exit Fullscreen (ESC)' : 'Fullscreen (F11)'}">
-		{#if isPageFullscreen}
-			<!-- Exit Fullscreen Icon -->
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-			</svg>
-		{:else}
-			<!-- Fullscreen Icon -->
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-			</svg>
-		{/if}
-	</button>
+	<!-- Footer Links (Legal) -->
+	<footer class="fixed bottom-4 left-4 z-30 flex items-center gap-3 text-xs text-gray-500">
+		<a href="/impressum" class="hover:text-hex-gold transition-colors">Impressum</a>
+		<span>|</span>
+		<a href="/privacy" class="hover:text-hex-gold transition-colors">Privacy</a>
+		<span>|</span>
+		<a href="/legal" class="hover:text-hex-gold transition-colors">Legal</a>
+		<span>|</span>
+		<a href="/cookies" class="hover:text-hex-gold transition-colors">Cookies</a>
+	</footer>
 </div>
 
 <style>

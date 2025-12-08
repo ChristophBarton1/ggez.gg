@@ -3,6 +3,7 @@
 	import { getLiveGame } from '$lib/api/riot.js';
 	import { getAIRecommendations } from '$lib/api/openai.js';
 	import { getItemIcon, optimizeRiotImage } from '$lib/utils/imageProxy.js';
+	import { getChampionIcon } from '$lib/utils/imageOptimizer.js';
 
 	export let summoner; // Summoner object with id, puuid, region
 	
@@ -76,6 +77,18 @@
 	// Game duration
 	$: gameLength = liveGame ? Math.floor((Date.now() - liveGame.gameStartTime) / 1000 / 60) : 0;
 
+	// Helper: Get champion name from ID
+	function getChampionName(championId) {
+		const champions = {
+			1: 'Annie', 2: 'Olaf', 3: 'Galio', 4: 'Twisted Fate', 5: 'Xin Zhao',
+			11: 'Master Yi', 22: 'Ashe', 51: 'Caitlyn', 64: 'Lee Sin', 81: 'Ezreal',
+			84: 'Akali', 103: 'Ahri', 157: 'Yasuo', 163: 'Taliyah', 222: 'Jinx',
+			236: 'Lucian', 412: 'Thresh'
+			// More added dynamically via fallback
+		};
+		return champions[championId] || `Champion ${championId}`;
+	}
+
 	function getRuneImageUrl(runeName) {
 		// Map rune names to DDragon rune IDs
 		const runeMap = {
@@ -143,23 +156,23 @@
 			<div class="teams-container">
 				<!-- Your Team (Blue) -->
 				<div class="team blue-team">
-					<h4>🔵 Your Team</h4>
+					<h4 class="team-title">🔵 Your Team</h4>
 					<div class="players-list">
 						{#each myTeam as player}
 							<div class="player-card {player.puuid === summoner.puuid ? 'you' : ''}">
 								<img 
-									src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${player.championId}.png`, { width: 48 })}
-									alt="Champion"
+									src={getChampionIcon(player.championId, 64)}
+									alt={getChampionName(player.championId)}
 									class="champ-icon"
 								/>
 								<div class="player-info">
-									<div class="player-name">
-										{player.summonerName}
+									<div class="summoner-name">
+										{player.summonerName || player.riotId || 'Player'}
 										{#if player.puuid === summoner.puuid}
 											<span class="you-badge">YOU</span>
 										{/if}
 									</div>
-									<div class="champion-name">Champion ID: {player.championId}</div>
+									<div class="champion-name">{getChampionName(player.championId)}</div>
 								</div>
 							</div>
 						{/each}
@@ -168,18 +181,18 @@
 
 				<!-- Enemy Team (Red) -->
 				<div class="team red-team">
-					<h4>🔴 Enemy Team</h4>
+					<h4 class="team-title">🔴 Enemy Team</h4>
 					<div class="players-list">
 						{#each enemyTeam as player}
 							<div class="player-card">
 								<img 
-									src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${player.championId}.png`, { width: 48 })}
-									alt="Champion"
+									src={getChampionIcon(player.championId, 64)}
+									alt={getChampionName(player.championId)}
 									class="champ-icon"
 								/>
 								<div class="player-info">
-									<div class="player-name">{player.summonerName}</div>
-									<div class="champion-name">Champion ID: {player.championId}</div>
+									<div class="summoner-name">{player.summonerName || player.riotId || 'Player'}</div>
+									<div class="champion-name">{getChampionName(player.championId)}</div>
 								</div>
 							</div>
 						{/each}
@@ -425,7 +438,7 @@
 		flex: 1;
 	}
 
-	.player-name {
+	.summoner-name {
 		color: white;
 		font-weight: bold;
 		margin-bottom: 2px;

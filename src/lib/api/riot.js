@@ -130,7 +130,8 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 
 		return {
 			puuid,
-			summonerId: summonerData.id,
+			id: summonerData.id, // encryptedSummonerId for Spectator API
+			summonerId: summonerData.id, // Alias for compatibility
 			accountId: summonerData.accountId,
 			name: riotGameName,
 			tag: riotTagLine,

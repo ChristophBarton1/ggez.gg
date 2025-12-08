@@ -169,47 +169,61 @@
 				<button on:click={checkLiveGame} class="refresh-small" title="Refresh">🔄</button>
 			</div>
 
-			<!-- Teams Display -->
-			<div class="teams-container">
-				<!-- Your Team (Blue) -->
-				<div class="team blue-team">
-					<h4 class="team-title">🔵 Your Team</h4>
-					<div class="players-list">
+			<!-- Teams Display - Glass Card Style -->
+			<div class="teams-container-grid">
+				<!-- Your Team (Blue) - Glass Card -->
+				<div class="team-glass-card blue-side">
+					<div class="team-header">
+						<div class="team-label">🔵 YOUR TEAM</div>
+					</div>
+					<div class="team-players">
 						{#each myTeam as player}
-							<div class="player-card {player.puuid === summoner.puuid ? 'you' : ''}">
-								<img 
-									src={getChampionIcon(player.championId, 64)}
-									alt={getChampionName(player.championId)}
-									class="champ-icon"
-								/>
-								<div class="player-info">
-									<div class="summoner-name">
+							<div class="player-row {player.puuid === summoner.puuid ? 'current-player' : ''}">
+								<!-- Champion Icon -->
+								<div class="player-champ-icon">
+									<img 
+										src={getChampionIcon(player.championId, 64)}
+										alt={getChampionName(player.championId)}
+										width="48"
+										height="48"
+									/>
+								</div>
+								<!-- Player Info -->
+								<div class="player-details">
+									<div class="player-summoner-name">
 										{player.summonerName || player.riotId || 'Player'}
 										{#if player.puuid === summoner.puuid}
-											<span class="you-badge">YOU</span>
+											<span class="current-badge">YOU</span>
 										{/if}
 									</div>
-									<div class="champion-name">{getChampionName(player.championId)}</div>
+									<div class="player-champion-name">{getChampionName(player.championId)}</div>
 								</div>
 							</div>
 						{/each}
 					</div>
 				</div>
 
-				<!-- Enemy Team (Red) -->
-				<div class="team red-team">
-					<h4 class="team-title">🔴 Enemy Team</h4>
-					<div class="players-list">
+				<!-- Enemy Team (Red) - Glass Card -->
+				<div class="team-glass-card red-side">
+					<div class="team-header">
+						<div class="team-label">🔴 ENEMY TEAM</div>
+					</div>
+					<div class="team-players">
 						{#each enemyTeam as player}
-							<div class="player-card">
-								<img 
-									src={getChampionIcon(player.championId, 64)}
-									alt={getChampionName(player.championId)}
-									class="champ-icon"
-								/>
-								<div class="player-info">
-									<div class="summoner-name">{player.summonerName || player.riotId || 'Player'}</div>
-									<div class="champion-name">{getChampionName(player.championId)}</div>
+							<div class="player-row">
+								<!-- Champion Icon -->
+								<div class="player-champ-icon">
+									<img 
+										src={getChampionIcon(player.championId, 64)}
+										alt={getChampionName(player.championId)}
+										width="48"
+										height="48"
+									/>
+								</div>
+								<!-- Player Info -->
+								<div class="player-details">
+									<div class="player-summoner-name">{player.summonerName || player.riotId || 'Player'}</div>
+									<div class="player-champion-name">{getChampionName(player.championId)}</div>
 								</div>
 							</div>
 						{/each}
@@ -448,92 +462,127 @@
 		font-weight: bold;
 	}
 
-	/* Teams */
-	.teams-container {
+	/* Teams - Glass Card Grid */
+	.teams-container-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 20px;
 		margin-bottom: 40px;
 	}
 
-	.team {
-		background: rgba(255, 255, 255, 0.02);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+	.team-glass-card {
+		background: rgba(1, 10, 19, 0.6);
+		backdrop-filter: blur(12px);
+		border: 1px solid rgba(200, 170, 110, 0.2);
 		border-radius: 12px;
 		padding: 20px;
+		transition: all 0.3s ease;
 	}
 
-	.team h4 {
+	.team-glass-card:hover {
+		border-color: rgba(200, 170, 110, 0.4);
+		box-shadow: 0 0 25px rgba(200, 170, 110, 0.15);
+	}
+
+	.team-glass-card.blue-side {
+		border-top: 3px solid #0acbe6;
+	}
+
+	.team-glass-card.red-side {
+		border-top: 3px solid #ff4444;
+	}
+
+	.team-header {
 		margin-bottom: 15px;
+		padding-bottom: 10px;
+		border-bottom: 1px solid rgba(200, 170, 110, 0.2);
+	}
+
+	.team-label {
 		font-family: 'Cinzel', serif;
-		color: white;
+		font-size: 0.9rem;
+		font-weight: bold;
+		letter-spacing: 1px;
+		color: #c8aa6e;
 	}
 
-	.blue-team h4 {
-		color: #0acbe6;
-	}
-
-	.red-team h4 {
-		color: #ff4444;
-	}
-
-	.players-list {
+	.team-players {
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 	}
 
-	.player-card {
+	.player-row {
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		padding: 10px;
+		padding: 12px;
 		background: rgba(0, 0, 0, 0.3);
 		border-radius: 8px;
-		transition: all 0.2s;
+		border: 1px solid transparent;
+		transition: all 0.2s ease;
 	}
 
-	.player-card:hover {
+	.player-row:hover {
 		background: rgba(0, 0, 0, 0.5);
+		border-color: rgba(200, 170, 110, 0.3);
 	}
 
-	.player-card.you {
-		background: rgba(200, 170, 110, 0.2);
-		border: 1px solid rgba(200, 170, 110, 0.5);
+	.player-row.current-player {
+		background: rgba(200, 170, 110, 0.15);
+		border-color: rgba(200, 170, 110, 0.5);
+		box-shadow: 0 0 15px rgba(200, 170, 110, 0.2);
 	}
 
-	.champ-icon {
+	.player-champ-icon {
+		flex-shrink: 0;
+	}
+
+	.player-champ-icon img {
 		width: 48px;
 		height: 48px;
 		border-radius: 8px;
-		border: 2px solid rgba(255, 255, 255, 0.2);
+		border: 2px solid rgba(200, 170, 110, 0.3);
+		transition: border-color 0.2s;
 	}
 
-	.player-info {
+	.player-row:hover .player-champ-icon img {
+		border-color: rgba(200, 170, 110, 0.6);
+	}
+
+	.player-details {
 		flex: 1;
+		min-width: 0;
 	}
 
-	.summoner-name {
+	.player-summoner-name {
 		color: white;
-		font-weight: bold;
-		margin-bottom: 2px;
+		font-weight: 600;
+		font-size: 0.95rem;
+		margin-bottom: 4px;
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	.you-badge {
-		font-size: 0.7rem;
-		background: #c8aa6e;
-		color: black;
-		padding: 2px 6px;
+	.current-badge {
+		font-size: 0.65rem;
+		background: linear-gradient(135deg, #c8aa6e, #a67c52);
+		color: #000;
+		padding: 2px 8px;
 		border-radius: 4px;
 		font-weight: 900;
+		letter-spacing: 0.5px;
+		box-shadow: 0 2px 8px rgba(200, 170, 110, 0.3);
 	}
 
-	.champion-name {
+	.player-champion-name {
 		font-size: 0.85rem;
 		color: #888;
+		font-weight: 500;
 	}
 
 	/* AI Recommendations */
@@ -704,7 +753,7 @@
 	}
 
 	@media (max-width: 768px) {
-		.teams-container {
+		.teams-container-grid {
 			grid-template-columns: 1fr;
 		}
 		

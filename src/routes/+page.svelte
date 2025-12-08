@@ -1,37 +1,12 @@
 <script>
-	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
 	import { onMount } from 'svelte';
-	import { getChampionLoading } from '$lib/utils/imageProxy.js';
+	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
 
 	let showVideo = false;
 	let videoReady = false;
 	let videoMuted = true;
 	let videoElement;
-
-	// Champion stats (loaded dynamically)
-	let championStats = {
-		highestWinrate: { championName: 'Amumu', championId: 'Amumu', winrate: 53.8, trend: 'up' },
-		mostPicked: { championName: 'Lee Sin', championId: 'LeeSin', pickrate: 28.4, trend: 'stable' },
-		trending: { championName: 'Briar', championId: 'Briar', banrate: 42.1, trend: 'up' }
-	};
-
-	// Champion images (reactive)
-	$: highestWinrateImg = getChampionLoading(championStats.highestWinrate.championId);
-	$: mostPickedImg = getChampionLoading(championStats.mostPicked.championId);
-	$: trendingImg = getChampionLoading(championStats.trending.championId);
-
-	// Fetch real champion stats
-	async function loadChampionStats() {
-		try {
-			const res = await fetch('/api/champion-stats');
-			if (res.ok) {
-				championStats = await res.json();
-			}
-		} catch (error) {
-			console.error('Failed to load champion stats:', error);
-			// Keep default fallback data
-		}
-	}
+	let isFullscreen = false;
 
 	function toggleMute() {
 		if (videoElement) {
@@ -40,20 +15,30 @@
 		}
 	}
 
+	function watchNow() {
+		isFullscreen = true;
+		if (videoElement) {
+			videoMuted = false;
+			videoElement.muted = false;
+		}
+	}
+
+	function exitFullscreen() {
+		isFullscreen = false;
+		if (videoElement) {
+			videoMuted = true;
+			videoElement.muted = true;
+		}
+	}
+
 	onMount(() => {
-		// ⚡ Async font loading
+		// Load fonts
 		const fontLink = document.createElement('link');
 		fontLink.rel = 'stylesheet';
 		fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap';
 		document.head.appendChild(fontLink);
 		
-		// Load champion stats
-		loadChampionStats();
-		
-		// Refresh every 30 minutes
-		const refreshInterval = setInterval(loadChampionStats, 30 * 60 * 1000);
-		
-		// Preload video in background AFTER page is interactive
+		// Preload video
 		const preloadVideo = () => {
 			showVideo = true;
 			window.removeEventListener('scroll', preloadVideo);
@@ -61,17 +46,13 @@
 			window.removeEventListener('click', preloadVideo);
 		};
 
-		// Start video load on ANY user interaction
 		window.addEventListener('scroll', preloadVideo, { once: true, passive: true });
 		window.addEventListener('mousemove', preloadVideo, { once: true, passive: true });
 		window.addEventListener('click', preloadVideo, { once: true, passive: true });
-
-		// Fallback: Load after 1 second if user doesn't interact
 		const fallback = setTimeout(preloadVideo, 1000);
 
 		return () => {
 			clearTimeout(fallback);
-			clearInterval(refreshInterval);
 			window.removeEventListener('scroll', preloadVideo);
 			window.removeEventListener('mousemove', preloadVideo);
 			window.removeEventListener('click', preloadVideo);
@@ -99,243 +80,321 @@
 	✅ Video loads after scroll/click/3s for epic experience
 -->
 
-<!-- Black Background for Cinema Effect -->
-<div class="fixed inset-0 -z-30 bg-black"></div>
-
-<!-- Static Background (Initial Load for LCP <1s) - "Fake Full-Screen" -->
-<div 
-	class="fixed inset-0 -z-20 flex items-center justify-center transition-opacity duration-1000"
-	class:opacity-0={showVideo && videoReady}>
-	<img 
-		src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Crect width='1920' height='1080' fill='%23000'/%3E%3C/svg%3E"
-		alt="Background"
-		fetchpriority="high"
-		loading="eager"
-		decoding="sync"
-		class="object-cover"
-		style="width: 100%; height: 100%;"
-	/>
-	
-	<!-- Vignette Overlay (matches video) -->
-	<div class="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80"></div>
-	<div class="absolute inset-0 bg-gradient-to-b from-black/20 sm:from-black/60 via-transparent to-black/85"></div>
-	<div class="absolute inset-0 bg-radial-sharp-mobile sm:bg-radial-sharp"></div>
-</div>
-
-<!-- 🎬 EPIC VIDEO BACKGROUND - "FAKE FULL-SCREEN" TRICK für Schärfe! -->
-{#if showVideo}
-	<div class="fixed inset-0 -z-20 flex items-center justify-center transition-opacity duration-1000"
-		 class:opacity-0={!videoReady}>
+<!-- Video Background -->
+<div class="fixed inset-0 -z-20 bg-black">
+	{#if showVideo}
 		<video 
 			bind:this={videoElement}
 			autoplay 
-			muted 
+			muted={videoMuted}
 			loop 
 			playsinline
 			on:canplay={() => videoReady = true}
-			class="object-cover"
-			style="width: 96%; height: 96%; max-width: 2400px;">
-			<!-- 
-				✅ CLEVER TRICK für SCHÄRFE!
-				- Video ist nur 96% groß (weniger Skalierung = schärfer!)
-				- Aber durch starke Vignette wirkt es Full-Screen
-				- Beste Balance zwischen Schärfe & Epic Look! 🔥
-			-->
+			class="w-full h-full object-cover {isFullscreen ? 'opacity-100' : 'opacity-60'}">
 			<source src="/background.mp4" type="video/mp4">
-			
-			<!-- Fallback wenn Video nicht lädt -->
-			<img 
-				src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'%3E%3Crect width='1920' height='1080' fill='%23000'/%3E%3C/svg%3E"
-				alt="Background"
-				class="w-full h-full object-cover"
-			/>
 		</video>
-		
-		<!-- STARKE Vignette - verdeckt dass Video kleiner ist! -->
-		<div class="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80"></div>
-		<div class="absolute inset-0 bg-gradient-to-b from-black/20 sm:from-black/60 via-transparent to-black/85"></div>
-		
-		<!-- Radial Gradient - Epic Depth + verdeckt Ränder -->
-		<div class="absolute inset-0 bg-radial-sharp-mobile sm:bg-radial-sharp"></div>
-	</div>
-{/if}
-
-<!-- Radial Gradient Overlay -->
-<div class="fixed inset-0 -z-10 pointer-events-none bg-gradient-radial from-transparent via-transparent to-black"></div>
-
-<!-- Main Container -->
-<div class="h-screen sm:min-h-screen flex flex-col items-center justify-center sm:justify-center justify-start pt-16 sm:pt-0 px-4 sm:px-6 md:px-8 overflow-hidden sm:overflow-visible">
-	<div class="text-center w-full max-w-3xl relative z-0">
-		
-		<!-- Brand Title - LCP Element (immediately visible) -->
-		<h1 class="font-cinzel text-3xl sm:text-5xl md:text-6xl lg:text-7xl mb-2 sm:mb-4 tracking-[2px] sm:tracking-[5px] uppercase gradient-text"
-		    style="text-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-			GGEZ.GG
-		</h1>
-
-
-		<!-- Subtitle -->
-		<div class="text-xs sm:text-base md:text-lg text-hex-blue mb-5 sm:mb-12 md:mb-16 tracking-[1px] sm:tracking-[2px] uppercase opacity-0 animate-fade-in-down delay-400">
-			Lightning-Fast Summoner Analytics
-		</div>
-
-		<!-- Search Input Container -->
-		<div class="opacity-0 animate-fade-in-up delay-200 relative z-50">
-			<SummonerSearch />
-		</div>
-
-		<!-- Trending Champions -->
-		<div class="mt-5 sm:mt-16 md:mt-20 flex flex-row gap-2 sm:gap-5 justify-center items-center opacity-0 animate-fade-in-up delay-900 relative z-0">
-			
-			<!-- Card 1: Highest Winrate -->
-			<a href="/champions" class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
-				<img 
-					src={highestWinrateImg.src}
-					srcset={highestWinrateImg.srcset}
-					sizes={highestWinrateImg.sizes}
-					alt={championStats.highestWinrate.championName}
-					width="174"
-					height="316"
-					loading="lazy"
-					decoding="async"
-					class="absolute inset-0 w-full h-full object-cover -z-10 grayscale-[0.5] transition-transform duration-500 group-hover:scale-110 group-hover:grayscale-0"
-				/>
-				<div class="p-1.5 sm:p-4 bg-gradient-to-t from-black to-transparent">
-					<div class="text-[7px] sm:text-xs text-hex-blue uppercase leading-tight">WR</div>
-					<div class="font-cinzel text-[10px] sm:text-xl text-white truncate leading-tight">{championStats.highestWinrate.championName}</div>
-					<div class="text-[9px] sm:text-sm text-hex-gold flex items-center gap-0.5">
-						{#if championStats.highestWinrate.trend === 'up'}
-							<span class="text-hex-blue">▲</span>
-						{:else if championStats.highestWinrate.trend === 'down'}
-							<span class="text-red-500">▼</span>
-						{:else}
-							<span>●</span>
-						{/if}
-						{championStats.highestWinrate.winrate}% WR
-					</div>
-				</div>
-			</a>
-
-			<!-- Card 2: Most Picked -->
-			<a href="/champions" class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
-				<img 
-					src={mostPickedImg.src}
-					srcset={mostPickedImg.srcset}
-					sizes={mostPickedImg.sizes}
-					alt={championStats.mostPicked.championName}
-					width="174"
-					height="316"
-					loading="lazy"
-					decoding="async"
-					class="absolute inset-0 w-full h-full object-cover -z-10 grayscale-[0.5] transition-transform duration-500 group-hover:scale-110 group-hover:grayscale-0"
-				/>
-				<div class="p-1.5 sm:p-4 bg-gradient-to-t from-black to-transparent">
-					<div class="text-[7px] sm:text-xs text-hex-blue uppercase leading-tight">Pick</div>
-					<div class="font-cinzel text-[10px] sm:text-xl text-white truncate leading-tight">{championStats.mostPicked.championName}</div>
-					<div class="text-[9px] sm:text-sm text-hex-gold flex items-center gap-0.5">
-						{#if championStats.mostPicked.trend === 'up'}
-							<span class="text-hex-blue">▲</span>
-						{:else if championStats.mostPicked.trend === 'down'}
-							<span class="text-red-500">▼</span>
-						{:else}
-							<span>●</span>
-						{/if}
-						{championStats.mostPicked.pickrate}% Pick
-					</div>
-				</div>
-			</a>
-
-			<!-- Card 3: Trending -->
-			<a href="/champions" class="trend-card w-24 h-36 sm:w-44 sm:h-60 relative glass-card border border-white/10 rounded-lg transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-end hover:-translate-y-2 hover:border-hex-gold hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group">
-				<img 
-					src={trendingImg.src}
-					srcset={trendingImg.srcset}
-					sizes={trendingImg.sizes}
-					alt={championStats.trending.championName}
-					width="174"
-					height="316"
-					loading="lazy"
-					decoding="async"
-					class="absolute inset-0 w-full h-full object-cover -z-10 grayscale-[0.5] transition-transform duration-500 group-hover:scale-110 group-hover:grayscale-0"
-				/>
-				<div class="p-1.5 sm:p-4 bg-gradient-to-t from-black to-transparent">
-					<div class="text-[7px] sm:text-xs text-hex-blue uppercase leading-tight">Hot</div>
-					<div class="font-cinzel text-[10px] sm:text-xl text-white truncate leading-tight">{championStats.trending.championName}</div>
-					<div class="text-[9px] sm:text-sm text-hex-gold flex items-center gap-0.5">
-						{#if championStats.trending.trend === 'up'}
-							<span class="text-red-500">▲</span>
-						{:else if championStats.trending.trend === 'down'}
-							<span class="text-hex-blue">▼</span>
-						{:else}
-							<span>●</span>
-						{/if}
-						{championStats.trending.banrate}% Ban
-					</div>
-				</div>
-			</a>
-
-		</div>
-
-	</div>
+	{/if}
+	<div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80"></div>
 </div>
 
-<!-- Audio Toggle Button (Desktop only) -->
-{#if showVideo && videoReady}
-	<button
-		on:click={toggleMute}
-		class="hidden sm:flex fixed bottom-6 right-6 z-50 w-10 h-10 items-center justify-center glass-card border border-hex-gold/30 rounded-full hover:border-hex-gold hover:bg-hex-gold/10 hover:scale-110 transition-all duration-300 group shadow-lg shadow-hex-gold/20"
-		aria-label={videoMuted ? 'Unmute video' : 'Mute video'}
-	>
-		{#if videoMuted}
-			<!-- Muted Icon -->
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-hex-gold group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd" />
-				<path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+<!-- Fullscreen Video Mode -->
+{#if isFullscreen}
+	<div class="fixed inset-0 z-50 bg-black flex items-center justify-center">
+		<button 
+			on:click={exitFullscreen}
+			class="absolute top-6 right-6 z-50 text-white hover:text-hex-gold transition-colors">
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 			</svg>
-		{:else}
-			<!-- Unmuted Icon -->
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-hex-gold group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-			</svg>
-		{/if}
-	</button>
+		</button>
+	</div>
+{:else}
+	<!-- Riot Client Layout -->
+	<div class="min-h-screen flex flex-col">
+		
+		<!-- Top Nav Bar (Riot Style) -->
+		<nav class="flex items-center justify-between px-8 py-4 bg-black/40 backdrop-blur-md border-b border-white/10">
+			<!-- Logo -->
+			<div class="flex items-center gap-8">
+				<a href="/" class="font-cinzel text-2xl text-hex-gold tracking-[2px] hover:text-white transition-colors">
+					GGEZ.GG
+				</a>
+				
+				<!-- Nav Links -->
+				<div class="hidden md:flex items-center gap-1">
+					<a href="/" class="nav-link">Overview</a>
+					<a href="/champions" class="nav-link">Champions</a>
+					<a href="/" class="nav-link">Stats</a>
+					<a href="/" class="nav-link">Esports</a>
+				</div>
+			</div>
+			
+			<!-- Right Icons -->
+			<div class="flex items-center gap-4">
+				<!-- Notification Bell -->
+				<button class="icon-btn relative">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+					</svg>
+					<span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+				</button>
+				
+				<!-- Currency -->
+				<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full">
+					<span class="text-yellow-400 text-sm">💰</span>
+					<span class="text-white text-sm font-bold">0</span>
+				</div>
+				
+				<!-- RP -->
+				<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full">
+					<span class="text-hex-gold text-sm">⚡</span>
+					<span class="text-white text-sm font-bold">15</span>
+				</div>
+				
+				<!-- Profile -->
+				<button class="icon-btn">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+					</svg>
+				</button>
+				
+				<!-- Settings -->
+				<button class="icon-btn">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+					</svg>
+				</button>
+			</div>
+		</nav>
+
+		<!-- Main Content - Riot Layout -->
+		<div class="flex-1 flex flex-col p-8 max-w-[1600px] mx-auto w-full">
+			
+			<!-- Top: Title + Search Bar (Centered) -->
+			<div class="flex flex-col items-center justify-center mb-auto pt-12">
+				<!-- Brand Title -->
+				<h1 class="font-cinzel text-5xl md:text-6xl lg:text-7xl mb-3 tracking-[5px] uppercase text-hex-gold"
+				    style="text-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+					GGEZ.GG
+				</h1>
+				
+				<!-- Subtitle -->
+				<div class="text-base md:text-lg text-hex-blue mb-8 tracking-[2px] uppercase">
+					Lightning-Fast Summoner Analytics
+				</div>
+				
+				<!-- Search Bar -->
+				<div class="w-full max-w-2xl">
+					<SummonerSearch />
+				</div>
+			</div>
+
+			<!-- Bottom Section: Trailer + Cards -->
+			<div class="mt-auto pb-8">
+				<!-- Trailer Info (LEFT BOTTOM) -->
+				<div class="mb-8 max-w-xl">
+					<h2 class="text-3xl font-bold text-white mb-3">Season 2025: Summoner's Destiny</h2>
+					<p class="text-gray-300 mb-6 leading-relaxed text-sm">
+						Centuries ago, Zaahen made a choice. Now, Xin Zhao must make his own.
+					</p>
+					<div class="flex items-center gap-4">
+						<button 
+							on:click={watchNow}
+							class="px-8 py-3 bg-white/90 hover:bg-white text-black font-bold rounded transition-all">
+							Watch Now
+						</button>
+						<button 
+							on:click={toggleMute}
+							class="p-3 bg-white/10 hover:bg-white/20 rounded transition-all text-white"
+							title="{videoMuted ? 'Unmute' : 'Mute'} video">
+							{#if videoMuted}
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+								</svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+								</svg>
+							{/if}
+						</button>
+					</div>
+				</div>
+
+				<!-- 4 Horizontal Cards (Riot Style) -->
+				<div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+					
+					<!-- Card 1 -->
+					<a href="/champions" class="video-card group">
+						<div class="video-card-thumb">
+							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(200, 170, 110, 0.3) 0%, rgba(139, 69, 19, 0.4) 100%);">
+								<div class="text-center">
+									<div class="text-6xl mb-2">🏆</div>
+									<div class="text-sm text-white/60 font-semibold">CHAMPIONS</div>
+								</div>
+							</div>
+							<span class="video-badge time">2:45</span>
+						</div>
+						<div class="video-card-title">
+							Champions: 2025 Meta Picks
+						</div>
+					</a>
+
+					<!-- Card 2 -->
+					<div class="video-card group">
+						<div class="video-card-thumb">
+							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(66, 135, 245, 0.3) 0%, rgba(0, 100, 255, 0.4) 100%);">
+								<div class="text-center">
+									<div class="text-6xl mb-2">🤖</div>
+									<div class="text-sm text-white/60 font-semibold">AI COACH</div>
+								</div>
+							</div>
+							<span class="video-badge dev">DEV</span>
+						</div>
+						<div class="video-card-title">
+							/dev: AI Coach Preview
+						</div>
+					</div>
+
+					<!-- Card 3 -->
+					<div class="video-card group">
+						<div class="video-card-thumb">
+							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(168, 85, 247, 0.4) 100%);">
+								<div class="text-center">
+									<div class="text-6xl mb-2">📊</div>
+									<div class="text-sm text-white/60 font-semibold">RANKED</div>
+								</div>
+							</div>
+							<span class="video-badge dev">DEV</span>
+						</div>
+						<div class="video-card-title">
+							/dev: Ranked 2026
+						</div>
+					</div>
+
+					<!-- Card 4 -->
+					<div class="video-card group">
+						<div class="video-card-thumb">
+							<div class="video-thumbnail-placeholder" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.4) 100%);">
+								<div class="text-center">
+									<div class="text-6xl mb-2">⚡</div>
+									<div class="text-sm text-white/60 font-semibold">SWIFTPLAY</div>
+								</div>
+							</div>
+							<span class="video-badge dev">DEV</span>
+						</div>
+						<div class="video-card-title">
+							/dev: A Swifter Swiftplay
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
 {/if}
 
 <style>
-	/* Mobile: Lighter Vignette - mehr vom Video sichtbar */
-	.bg-radial-sharp-mobile {
-		background: radial-gradient(
-			ellipse at center,
-			transparent 0%,
-			transparent 35%,
-			rgba(0, 0, 0, 0.2) 60%,
-			rgba(0, 0, 0, 0.7) 100%
-		);
+	/* Nav Link */
+	.nav-link {
+		padding: 0.75rem 1.25rem;
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		border-radius: 0.375rem;
+		transition: all 0.2s;
+		background: transparent;
+	}
+	
+	.nav-link:hover {
+		color: white;
+		background: rgba(255, 255, 255, 0.05);
 	}
 
-	/* Desktop: SHARP Vignette - verdeckt Ränder & fokussiert Center */
-	.bg-radial-sharp {
-		background: radial-gradient(
-			ellipse at center,
-			transparent 0%,
-			transparent 25%,
-			rgba(0, 0, 0, 0.4) 50%,
-			rgba(0, 0, 0, 0.85) 100%
-		);
+	/* Icon Button */
+	.icon-btn {
+		width: 2.5rem;
+		height: 2.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: rgba(255, 255, 255, 0.7);
+		border-radius: 0.5rem;
+		transition: all 0.2s;
+		background: transparent;
 	}
 	
-	/* Soft radial vignette (for static image) */
-	.bg-radial-dark {
-		background: radial-gradient(
-			ellipse at center,
-			transparent 0%,
-			rgba(0, 0, 0, 0.3) 40%,
-			rgba(0, 0, 0, 0.8) 100%
-		);
+	.icon-btn:hover {
+		color: white;
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	/* Video Card Style (Riot Client) */
+	.video-card {
+		position: relative;
+		background: rgba(0, 0, 0, 0.6);
+		border-radius: 8px;
+		overflow: hidden;
+		transition: all 0.3s ease;
+		cursor: pointer;
 	}
 	
-	/* Fallback gradient */
-	.bg-gradient-radial {
-		background: radial-gradient(circle, transparent 0%, #000 90%);
+	.video-card:hover {
+		transform: scale(1.03);
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+	}
+
+	.video-card-thumb {
+		position: relative;
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		background: linear-gradient(135deg, rgba(20, 30, 40, 0.9) 0%, rgba(10, 15, 20, 0.95) 100%);
+		border-radius: 8px 8px 0 0;
+		overflow: hidden;
+	}
+
+	.video-thumbnail-placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(135deg, rgba(200, 170, 110, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+	}
+
+	.video-badge {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-size: 0.7rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		background: rgba(0, 0, 0, 0.8);
+		color: white;
+	}
+
+	.video-badge.dev {
+		background: rgba(0, 0, 0, 0.9);
+		color: white;
+	}
+
+	.video-badge.time {
+		background: rgba(0, 0, 0, 0.8);
+		color: white;
+	}
+
+	.video-card-title {
+		padding: 12px;
+		color: white;
+		font-size: 0.9rem;
+		font-weight: 600;
+		line-height: 1.3;
+		background: rgba(0, 0, 0, 0.5);
 	}
 </style>

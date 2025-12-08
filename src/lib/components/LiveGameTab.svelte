@@ -23,13 +23,18 @@
 		try {
 			console.log('🎮 Full summoner object:', summoner);
 			console.log('🎮 summoner.id:', summoner.id);
-			console.log('🎮 Checking live game for:', summoner.id);
+			console.log('🎮 summoner.summonerId:', summoner.summonerId);
 			
-			if (!summoner.id) {
-				throw new Error('Summoner ID is missing');
+			// Fallback: Use summonerId if id is missing (for cached data)
+			const encryptedSummonerId = summoner.id || summoner.summonerId;
+			
+			console.log('🎮 Using encryptedSummonerId:', encryptedSummonerId);
+			
+			if (!encryptedSummonerId) {
+				throw new Error('Summoner ID is missing (both id and summonerId are undefined)');
 			}
 			
-			const result = await getLiveGame(summoner.id, summoner.region || 'EUW');
+			const result = await getLiveGame(encryptedSummonerId, summoner.region || 'EUW');
 			
 			if (result.inGame) {
 				liveGame = result.gameData;

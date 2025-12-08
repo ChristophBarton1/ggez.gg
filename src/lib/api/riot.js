@@ -423,3 +423,42 @@ export function parseSummonerInput(input) {
 	}
 	return null;
 }
+
+/**
+ * GET LIVE GAME DATA (Spectator API)
+ * Check if summoner is currently in a game and get all player info
+ */
+export async function getLiveGame(encryptedSummonerId, region = 'EUW') {
+	try {
+		const platform = PLATFORM_IDS[region] || 'euw1';
+		const url = `https://${platform}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${encryptedSummonerId}`;
+		
+		console.log(' Fetching live game:', url);
+		
+		const res = await fetch(url, {
+			headers: { 'X-Riot-Token': RIOT_API_KEY }
+		});
+		
+		if (res.status === 404) {
+			// Not in game
+			return { inGame: false };
+		}
+		
+		if (!res.ok) {
+			throw new Error(`Live Game API error: ${res.status}`);
+		}
+		
+		const gameData = await res.json();
+		
+		console.log(' Live game found:', gameData);
+		
+		return {
+			inGame: true,
+			gameData
+		};
+		
+	} catch (error) {
+		console.error('Live game fetch error:', error);
+		return { inGame: false, error: error.message };
+	}
+}

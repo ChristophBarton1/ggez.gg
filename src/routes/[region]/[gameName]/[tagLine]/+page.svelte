@@ -6,6 +6,7 @@
 	import MatchAIChat from '$lib/components/MatchAIChat.svelte';
 	import ChampionPerformanceChart from '$lib/components/ChampionPerformanceChart.svelte';
 	import LPGainsByChampion from '$lib/components/LPGainsByChampion.svelte';
+	import LiveGameTab from '$lib/components/LiveGameTab.svelte';
 	import { getChampionSplashSrcset, getChampionSplash, getItemIcon, getProfileIcon } from '$lib/utils/imageProxy.js';
 	import { getRankEmblem, getChampionIcon } from '$lib/utils/imageOptimizer.js';
 
@@ -514,6 +515,12 @@
 			<!-- Tab Navigation -->
 			<div class="tabs-nav flex gap-4 mb-8 border-b border-hex-gold/20 pb-0">
 				<button 
+					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'liveGame' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'}"
+					on:click={() => activeTab = 'liveGame'}
+				>
+					🔴 Live Game
+				</button>
+				<button 
 					class="tab-btn font-cinzel text-lg px-6 py-3 transition-all duration-300 border-b-2 {activeTab === 'matchHistory' ? 'border-hex-gold text-hex-gold' : 'border-transparent text-gray-400 hover:text-white'}"
 					on:click={() => activeTab = 'matchHistory'}
 				>
@@ -534,7 +541,10 @@
 			</div>
 
 			<!-- Tab Content -->
-			{#if activeTab === 'matchHistory'}
+			{#if activeTab === 'liveGame'}
+				<!-- 🎮 LIVE GAME TAB -->
+				<LiveGameTab summoner={{...summoner, region}} />
+			{:else if activeTab === 'matchHistory'}
 				<!-- Match History Tab -->
 				<h2 class="history-title font-cinzel text-3xl mb-5 text-white border-b border-hex-gold/30 pb-2 inline-block">
 					Recent Matches

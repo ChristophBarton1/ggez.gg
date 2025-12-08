@@ -453,18 +453,28 @@ export async function getLiveGame(encryptedPUUID, region = 'EUW') {
 			headers: { 'X-Riot-Token': RIOT_API_KEY }
 		});
 		
+		console.log('📡 API Response Status:', res.status, res.statusText);
+		
 		if (res.status === 404) {
 			// Not in game
+			console.log('❌ Not in game (404 - No active game found)');
 			return { inGame: false };
 		}
 		
 		if (!res.ok) {
-			throw new Error(`Live Game API error: ${res.status}`);
+			const errorBody = await res.text();
+			console.error('❌ API Error:', res.status, res.statusText);
+			console.error('❌ Error Body:', errorBody);
+			throw new Error(`Live Game API error: ${res.status} - ${errorBody}`);
 		}
 		
 		const gameData = await res.json();
 		
-		console.log(' Live game found:', gameData);
+		console.log('✅ Live game found!');
+		console.log('📊 Game Type:', gameData.gameType);
+		console.log('📊 Game Mode:', gameData.gameMode);
+		console.log('📊 Queue ID:', gameData.gameQueueConfigId);
+		console.log('📊 Full Data:', gameData);
 		
 		return {
 			inGame: true,

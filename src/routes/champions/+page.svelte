@@ -145,7 +145,10 @@
 							games: stat.games,
 							// ⚡ Optimized WebP images (70% smaller!)
 							image: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`, { width: 48 }),
-							splash: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 400 })
+							// Mini splash (400px) for secondary cards
+							splash: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 400 }),
+							// Hero splash (800px) for main spotlight - SHARP!
+							splashHero: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 800 })
 						};
 					})
 					.filter(c => c !== null && c.name !== 'Unknown'); // Filter out null and unknown champions
@@ -278,7 +281,14 @@
 		<div class="spotlight-grid mb-16">
 			<!-- Hero Card -->
 			<div class="spotlight-card spotlight-hero group cursor-pointer">
-				<img src={spotlightChampions[0].splash} alt={spotlightChampions[0].name} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+				<img 
+					src={spotlightChampions[0].splashHero} 
+					alt={spotlightChampions[0].name} 
+					class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+					fetchpriority="high"
+					loading="eager"
+					decoding="async"
+				>
 				<div class="overlay">
 					<div class="meta-tag">{spotlightChampions[0].tag}</div>
 					<div class="hero-name">{spotlightChampions[0].name}</div>
@@ -510,6 +520,26 @@
 	.spotlight-card:hover {
 		border-color: #0acbe6;
 		box-shadow: 0 0 30px rgba(10, 203, 230, 0.1);
+	}
+	
+	/* ⚡ Smooth image loading - no flicker! */
+	.spotlight-hero img {
+		animation: fadeInImage 0.5s ease-in-out;
+		will-change: opacity;
+	}
+	
+	.spotlight-mini img {
+		animation: fadeInImageSoft 0.4s ease-in-out;
+	}
+	
+	@keyframes fadeInImage {
+		0% { opacity: 0; transform: scale(1.05); }
+		100% { opacity: 1; transform: scale(1); }
+	}
+	
+	@keyframes fadeInImageSoft {
+		0% { opacity: 0; }
+		100% { opacity: 0.6; }
 	}
 
 	.overlay {

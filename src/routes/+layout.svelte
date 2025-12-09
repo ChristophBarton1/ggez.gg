@@ -19,10 +19,27 @@
   });
   
   $: isHomepage = $page.url.pathname === '/';
+  $: isLegalPage = ['/impressum', '/privacy', '/legal'].includes($page.url.pathname);
 </script>
 
-<!-- Global Navbar on all pages -->
-<Navbar showSearchInNav={!isHomepage} />
+<!-- Global Navbar on all pages except legal pages -->
+{#if !isLegalPage}
+  <Navbar showSearchInNav={!isHomepage} />
+{/if}
 
-<!-- Page Content -->
-<slot />
+<!-- Page Content with automatic padding for fixed navbar -->
+<div class="page-wrapper" class:has-navbar={!isLegalPage} class:is-homepage={isHomepage}>
+  <slot />
+</div>
+
+<style>
+  /* Automatic padding for ALL pages with navbar (except homepage) */
+  .page-wrapper.has-navbar:not(.is-homepage) {
+    padding-top: 80px;
+  }
+  
+  /* Homepage handles its own padding */
+  .page-wrapper.is-homepage {
+    padding-top: 0;
+  }
+</style>

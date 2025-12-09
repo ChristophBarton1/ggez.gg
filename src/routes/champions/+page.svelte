@@ -270,7 +270,6 @@
 
 		<!-- Spotlight Grid (Top 5 Meta Champions) -->
 		{#if spotlightChampions.length >= 5}
-		{#key spotlightChampions.map(c => c.championId).join('-')}
 		<div class="spotlight-grid mb-16">
 			<!-- Hero Card -->
 			<div class="spotlight-card spotlight-hero group cursor-pointer">
@@ -328,7 +327,6 @@
 				</div>
 			</div>
 		</div>
-		{/key}
 		{/if}
 
 		<!-- Statistics Section -->
@@ -490,22 +488,16 @@
 		grid-template-columns: 2fr 1fr 1fr;
 		gap: 20px;
 		margin-bottom: 60px;
+		height: 350px;
 	}
 
 	@media (max-width: 768px) {
 		.spotlight-grid {
 			grid-template-columns: 1fr;
+			height: auto;
 		}
-		.spotlight-hero { 
-			aspect-ratio: 16/9;
-		}
-		.spotlight-col { 
-			flex-direction: column;
-			gap: 20px;
-		}
-		.spotlight-mini {
-			aspect-ratio: 16/9;
-		}
+		.spotlight-hero { height: 300px; }
+		.spotlight-col { flex-direction: row; height: 150px; }
 	}
 
 	.spotlight-card {
@@ -520,39 +512,6 @@
 	.spotlight-card:hover {
 		border-color: #0acbe6;
 		box-shadow: 0 0 30px rgba(10, 203, 230, 0.1);
-	}
-	
-	/* ⚡ Prevent layout shift - fixed aspect ratio */
-	.spotlight-hero {
-		aspect-ratio: 16/9;
-		background: linear-gradient(135deg, #1a1b23 0%, #0f1118 100%);
-	}
-	
-	.spotlight-mini {
-		aspect-ratio: 16/9;
-		background: linear-gradient(135deg, #1a1b23 0%, #0f1118 100%);
-	}
-	
-	/* ⚡ Smooth image loading - no flicker! */
-	.spotlight-hero img {
-		animation: fadeInImage 0.5s ease-in-out;
-		will-change: opacity;
-		min-height: 100%;
-	}
-	
-	.spotlight-mini img {
-		animation: fadeInImageSoft 0.4s ease-in-out;
-		min-height: 100%;
-	}
-	
-	@keyframes fadeInImage {
-		0% { opacity: 0; transform: scale(1.05); }
-		100% { opacity: 1; transform: scale(1); }
-	}
-	
-	@keyframes fadeInImageSoft {
-		0% { opacity: 0; }
-		100% { opacity: 0.6; }
 	}
 
 	.overlay {
@@ -600,6 +559,7 @@
 	}
 
 	.spotlight-mini {
+		flex: 1;
 		position: relative;
 	}
 

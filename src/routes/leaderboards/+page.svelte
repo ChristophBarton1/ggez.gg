@@ -14,9 +14,8 @@
 	let selectedRegion = 'euw'; // Default to EUW
 	let selectedQueue = 'ranked_solo'; // Default to Ranked Solo
 	let selectedPatch = 'current'; // Current patch
-	let sortBy = 'winRate'; // winRate, pickRate, banRate, tier
+	let sortBy = 'lpGain'; // Default sort by LP gains
 	let sortDirection = 'desc'; // asc or desc
-	let latestVersion = '';
 
 	// Rank filters
 	const ranks = [
@@ -73,103 +72,83 @@
 		{ value: 'support', label: 'Support', icon: '🛡️' }
 	];
 
+	let latestVersion = '';
+	let championNames = {};
+
 	onMount(async () => {
-		await loadChampions();
+		await loadPlayers();
 		isInitialized = true;
 	});
 
 	let loadPromise = null;
 	
-	async function loadChampions() {
-		// Prevent multiple simultaneous loads
-		if (loadPromise) {
-			return loadPromise;
-		}
+	async function loadPlayers() {
+		if (loadPromise) return loadPromise;
 		
 		loadPromise = (async () => {
 			try {
 				loading = true;
 				
-				// Only fetch version once
+				// Fetch version for champion images
 				if (!latestVersion) {
 					const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
 					const versions = await versionRes.json();
 					latestVersion = versions[0];
 				}
 				
-				// Only fetch champion names once
+				// Fetch champion names for most played
 				if (Object.keys(championNames).length === 0) {
 					const champDataRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
 					const champData = await champDataRes.json();
-					
-					// Build championId -> name/key mapping
 					Object.values(champData.data).forEach(champ => {
-						championNames[champ.key] = {
-							id: champ.id,
-							name: champ.name,
-							key: champ.key
-						};
+						championNames[champ.key] = { id: champ.id, name: champ.name, key: champ.key };
 					});
 				}
 				
-				// Fetch leaderboards from our API  
-				const metaRes = await fetch(`/api/leaderboards?region=${selectedRegion}&role=${selectedRole}&timeframe=${selectedPatch}`);
-				const metaData = await metaRes.json();
+				// Fetch players from API
+				const res = await fetch(`/api/leaderboards?region=${selectedRegion}&role=${selectedRole}&timeframe=${selectedPatch}`);
+				const data = await res.json();
 				
-				if (!metaData.success) {
-					throw new Error('Failed to fetch meta data');
-				}
+				if (!data.success) throw new Error('Failed to fetch leaderboard');
 				
-				// Enrich with names and images
-				// Use a Set to track unique championIds and prevent duplicates
-				const seenIds = new Set();
-				champions = metaData.champions
-					.map((stat, index) => {
-						const champInfo = championNames[stat.championId] || { id: 'Unknown', name: 'Unknown' };
-						
-						// Skip if we've already seen this championId
-						if (seenIds.has(stat.championId)) {
-							return null;
-						}
-						seenIds.add(stat.championId);
-						
-						return {
-							rank: index + 1,
-							championId: stat.championId,
-							id: champInfo.id,
-							name: champInfo.name,
-							tier: stat.tier,
-							winRate: stat.winRate,
-							pickRate: stat.pickRate,
-							banRate: stat.banRate,
-							games: stat.games,
-							// ⚡ Optimized WebP images (70% smaller!)
-							image: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`, { width: 48 }),
-							// Mini splash (400px) for secondary cards
-							splash: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 400 }),
-							// Hero splash (800px) for main spotlight - SHARP!
-							splashHero: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 800 })
-						};
-					})
-					.filter(c => c !== null && c.name !== 'Unknown'); // Filter out null and unknown champions
+				// Process players
+				players = data.players.map((p, i) => ({
+					rank: i + 1,
+					summonerName: p.summonerName,
+					tagLine: p.tagLine,
+					soloQTier: p.tier,
+					soloQLP: p.lp,
+					flexTier: p.flexTier || 'Unranked',
+					flexLP: p.flexLP || 0,
+					lpGain: p.lpGain,
+					winRate: p.winRate.toFixed(1),
+					wins: p.wins,
+					losses: p.losses,
+					mainChampion: p.mainChampion,
+					topChampions: p.topChampions || [p.mainChampion],
+					profileIconId: p.profileIconId,
+					// Main champ splash for spotlight
+					splash: championNames[p.mainChampion] ? 
+						optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championNames[p.mainChampion].id}_0.jpg`, { width: 400 }) : '',
+					splashHero: championNames[p.mainChampion] ? 
+						optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championNames[p.mainChampion].id}_0.jpg`, { width: 800 }) : ''
+				}));
 				
-				// Get top 5 for spotlight
-				spotlightChampions = champions.slice(0, 5).map((c, i) => ({
-					...c,
-					tag: i === 0 ? `God Tier • ${c.winRate}% WR` : `${c.tier} Tier`,
+				// Top 5 for spotlight
+				spotlightPlayers = players.slice(0, 5).map((p, i) => ({
+					...p,
+					tag: i === 0 ? `#1 ${p.soloQTier} • ${p.soloQLP} LP` : `#${i+1} ${p.soloQTier}`,
 					tagColor: i === 0 ? '#c8aa6e' : ['#a855f7', '#3b82f6', '#10b981', '#e84057'][i - 1]
 				}));
 				
-				filteredChampions = champions;
+				filteredPlayers = players;
 				loading = false;
 				
-				// Clear old console logs
-				if (champions.length > 0) {
-					console.log(`✅ ${champions.length} champions - ${selectedQueue.toUpperCase()} | ${selectedRegion.toUpperCase()} | ${selectedRank} | ${selectedRole} | ${selectedPatch}`);
+				if (players.length > 0) {
+					console.log(`✅ ${players.length} players - ${selectedRegion.toUpperCase()}`);
 				}
-				
 			} catch (error) {
-				console.error('❌ Error loading champions:', error);
+				console.error('❌ Error loading players:', error);
 				loading = false;
 			} finally {
 				loadPromise = null;
@@ -183,46 +162,27 @@
 	let filterTimeout;
 	let previousFilters = '';
 	$: {
-		// Create a key from current filter values
-		const currentFilters = `${selectedRank}-${selectedRole}-${selectedRegion}-${selectedQueue}-${selectedPatch}`;
-		
-		// Only reload if filters actually changed AND we're initialized
+		const currentFilters = `${selectedRole}-${selectedRegion}-${selectedPatch}`;
 		if (isInitialized && previousFilters && currentFilters !== previousFilters) {
 			clearTimeout(filterTimeout);
-			filterTimeout = setTimeout(() => {
-				loadChampions();
-			}, 500);
+			filterTimeout = setTimeout(() => loadPlayers(), 500);
 		}
-		
-		// Update previous filters
 		previousFilters = currentFilters;
 	}
 
-	// Search filter and sorting (client-side)
+	// Search and sort
 	$: {
-		let result = champions.filter(champ => {
-			return champ.name.toLowerCase().includes(searchQuery.toLowerCase());
-		});
+		let result = players.filter(p => 
+			p.summonerName.toLowerCase().includes(searchQuery.toLowerCase())
+		);
 		
-		// Sort by selected column
 		result.sort((a, b) => {
-			let aVal, bVal;
-			
-			if (sortBy === 'tier') {
-				// Tier sorting: S+ > S > A+ > A > B
-				const tierOrder = { 'S+': 5, 'S': 4, 'A+': 3, 'A': 2, 'B': 1 };
-				aVal = tierOrder[a.tier] || 0;
-				bVal = tierOrder[b.tier] || 0;
-			} else {
-				aVal = parseFloat(a[sortBy]) || 0;
-				bVal = parseFloat(b[sortBy]) || 0;
-			}
-			
+			const aVal = parseFloat(a[sortBy]) || 0;
+			const bVal = parseFloat(b[sortBy]) || 0;
 			return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
 		});
 		
-		// Update ranks after sorting
-		filteredChampions = result.map((c, i) => ({ ...c, rank: i + 1 }));
+		filteredPlayers = result.map((p, i) => ({ ...p, rank: i + 1 }));
 	}
 	
 	// Toggle sort
@@ -273,25 +233,25 @@
 			Top <span class="text-[#0acbe6]">Players</span>
 		</div>
 
-		<!-- Spotlight Grid (Top 5 Meta Champions) -->
-		{#if spotlightChampions.length >= 5}
+		<!-- Spotlight Grid (Top 5 Players) -->
+		{#if spotlightPlayers.length >= 5}
 		<div class="spotlight-grid mb-20">
 			<!-- Hero Card -->
 			<div class="spotlight-card spotlight-hero group cursor-pointer">
 				<img 
-					src={spotlightChampions[0].splashHero} 
-					alt={spotlightChampions[0].name} 
+					src={spotlightPlayers[0].splashHero} 
+					alt={spotlightPlayers[0].summonerName} 
 					class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
 					fetchpriority="high"
 					loading="eager"
 					decoding="async"
 				>
 				<div class="overlay">
-					<div class="meta-tag">{spotlightChampions[0].tag}</div>
-					<div class="hero-name">{spotlightChampions[0].name}</div>
+					<div class="meta-tag">{spotlightPlayers[0].tag}</div>
+					<div class="hero-name">{spotlightPlayers[0].summonerName}#{spotlightPlayers[0].tagLine}</div>
 					<div class="hero-stat">
-						<span>Pick Rate: <b>{spotlightChampions[0].pickRate}%</b></span>
-						<span>Ban Rate: <b>{spotlightChampions[0].banRate}%</b></span>
+						<span>Win Rate: <b>{spotlightPlayers[0].winRate}%</b></span>
+						<span>LP: <b class="text-hex-gold">{spotlightPlayers[0].soloQLP}</b></span>
 					</div>
 				</div>
 			</div>
@@ -299,17 +259,17 @@
 			<!-- Column 1 -->
 			<div class="spotlight-col">
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[1].splash} alt={spotlightChampions[1].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightPlayers[1].splash} alt={spotlightPlayers[1].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[1].tagColor}; color: white;">{spotlightChampions[1].tag}</div>
-						<div class="mini-name">{spotlightChampions[1].name}</div>
+						<div class="meta-tag" style="background: {spotlightPlayers[1].tagColor}; color: white;">{spotlightPlayers[1].tag}</div>
+						<div class="mini-name">{spotlightPlayers[1].summonerName}</div>
 					</div>
 				</div>
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[2].splash} alt={spotlightChampions[2].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightPlayers[2].splash} alt={spotlightPlayers[2].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[2].tagColor}; color: white;">{spotlightChampions[2].tag}</div>
-						<div class="mini-name">{spotlightChampions[2].name}</div>
+						<div class="meta-tag" style="background: {spotlightPlayers[2].tagColor}; color: white;">{spotlightPlayers[2].tag}</div>
+						<div class="mini-name">{spotlightPlayers[2].summonerName}</div>
 					</div>
 				</div>
 			</div>
@@ -317,17 +277,17 @@
 			<!-- Column 2 -->
 			<div class="spotlight-col">
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[3].splash} alt={spotlightChampions[3].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightPlayers[3].splash} alt={spotlightPlayers[3].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[3].tagColor}; color: white;">{spotlightChampions[3].tag}</div>
-						<div class="mini-name">{spotlightChampions[3].name}</div>
+						<div class="meta-tag" style="background: {spotlightPlayers[3].tagColor}; color: white;">{spotlightPlayers[3].tag}</div>
+						<div class="mini-name">{spotlightPlayers[3].summonerName}</div>
 					</div>
 				</div>
 				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[4].splash} alt={spotlightChampions[4].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
+					<img src={spotlightPlayers[4].splash} alt={spotlightPlayers[4].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[4].tagColor}; color: white;">{spotlightChampions[4].tag}</div>
-						<div class="mini-name">{spotlightChampions[4].name}</div>
+						<div class="meta-tag" style="background: {spotlightPlayers[4].tagColor}; color: white;">{spotlightPlayers[4].tag}</div>
+						<div class="mini-name">{spotlightPlayers[4].summonerName}</div>
 					</div>
 				</div>
 			</div>
@@ -408,10 +368,16 @@
 					<thead>
 						<tr>
 							<th style="width: 50px;">#</th>
-							<th>Champion</th>
-							<th class="sortable" on:click={() => toggleSort('tier')}>
-								Tier
-								{#if sortBy === 'tier'}
+							<th>Summoner</th>
+							<th class="sortable" on:click={() => toggleSort('soloQLP')}>
+								Solo/Duo
+								{#if sortBy === 'soloQLP'}
+									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
+								{/if}
+							</th>
+							<th class="sortable" on:click={() => toggleSort('flexLP')}>
+								Flex
+								{#if sortBy === 'flexLP'}
 									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
 								{/if}
 							</th>
@@ -421,46 +387,54 @@
 									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
 								{/if}
 							</th>
-							<th class="sortable" on:click={() => toggleSort('pickRate')}>
-								Pick Rate
-								{#if sortBy === 'pickRate'}
+							<th class="sortable" on:click={() => toggleSort('lpGain')}>
+								LP Gain (7d)
+								{#if sortBy === 'lpGain'}
 									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
 								{/if}
 							</th>
-							<th class="sortable" on:click={() => toggleSort('banRate')}>
-								Ban Rate
-								{#if sortBy === 'banRate'}
-									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
-								{/if}
-							</th>
-							<th>Trend</th>
+							<th>Top 5 Champions</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each filteredChampions as champ (champ.championId)}
+						{#each filteredPlayers as player (player.summonerName + player.tagLine)}
 							<tr class="table-row" transition:fade={{ duration: 200 }}>
-								<td class="text-[#64748b] font-bold">{champ.rank}</td>
+								<td class="text-[#64748b] font-bold">{player.rank}</td>
 								<td>
 									<div class="col-champ">
-										<img src={champ.image} alt={champ.name} width="40" height="40">
+										<img src="https://ddragon.leagueoflegends.com/cdn/14.24.1/img/profileicon/{player.profileIconId}.png" alt={player.summonerName} width="40" height="40" style="border-radius: 50%;">
 										<div class="champ-text">
-											<div>{champ.name}</div>
-											<div>{champ.role}</div>
+											<div class="font-bold">{player.summonerName}#{player.tagLine}</div>
+											<div class="text-xs text-gray-500">{player.wins}W {player.losses}L</div>
 										</div>
 									</div>
 								</td>
 								<td>
-									<span class="tier-badge {getTierClass(champ.tier)}">{champ.tier}</span>
+									<span class="tier-badge tier-s">{player.soloQTier}</span>
+									<div class="text-xs text-hex-gold mt-1">{player.soloQLP} LP</div>
 								</td>
-								<td class="winrate">{champ.winRate}%</td>
-								<td>{champ.pickRate}%</td>
-								<td class="banrate">{champ.banRate}%</td>
 								<td>
-									<div class="trend-line">
-										<div class="bar" style="height: 40%;"></div>
-										<div class="bar" style="height: 60%;"></div>
-										<div class="bar up" style="height: 90%;"></div>
-										<div class="bar up" style="height: 70%;"></div>
+									<span class="tier-badge tier-a">{player.flexTier}</span>
+									{#if player.flexLP > 0}
+										<div class="text-xs text-gray-400 mt-1">{player.flexLP} LP</div>
+									{/if}
+								</td>
+								<td class="winrate">{player.winRate}%</td>
+								<td class="text-green-400 font-bold">+{player.lpGain} LP</td>
+								<td>
+									<div class="flex gap-1">
+										{#each player.topChampions.slice(0, 5) as champKey}
+											{#if championNames[champKey]}
+												<img 
+													src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${championNames[champKey].id}.png`, { width: 32 })}
+													alt={championNames[champKey].name}
+													title={championNames[champKey].name}
+													width="32"
+													height="32"
+													class="rounded"
+												/>
+											{/if}
+										{/each}
 									</div>
 								</td>
 							</tr>
@@ -471,7 +445,7 @@
 		</div>
 
 		<div class="mt-8 text-center text-[#64748b] text-sm font-cinzel">
-			Showing {filteredChampions.length} of {champions.length} Champions
+			Showing {filteredPlayers.length} of {players.length} Players
 		</div>
 	{/if}
 </div>

@@ -24,6 +24,8 @@ export async function GET({ url }) {
 	// Debug: Check if API key is loaded
 	console.log('🔑 API Key loaded:', RIOT_API_KEY ? `${RIOT_API_KEY.substring(0, 15)}...` : 'NOT FOUND');
 	console.log('🌍 Platform:', platform, '| Regional:', regional);
+	console.log('⏰ Request time:', new Date().toLocaleTimeString());
+	console.log('🆕 NEW CODE LOADED!');
 
 	try {
 		// Fetch Challenger and Grandmaster players (Master is too slow/large)
@@ -60,14 +62,18 @@ export async function GET({ url }) {
 		// Different default champions for variety in spotlight
 		const defaultChampions = ['157', '238', '84', '777', '141', '555', '11', '64', '103', '245'];
 		
-		// Fetch detailed summoner info for each player (in parallel)
+		// Fetch detailed summoner info for each player (with rate limiting)
 		const playerDetailsPromises = allPlayers.map(async (p, i) => {
+			// Add delay to avoid rate limiting (100ms between each player)
+			await new Promise(resolve => setTimeout(resolve, i * 100));
+			
 			try {
 				// Fetch summoner details to get PUUID
 				const summonerRes = await fetch(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/${p.summonerId}?api_key=${RIOT_API_KEY}`);
 				
 				if (!summonerRes.ok) {
-					throw new Error('Failed to fetch summoner');
+					console.error(`❌ Summoner API failed for ${p.summonerName || p.summonerId}: ${summonerRes.status} ${summonerRes.statusText}`);
+					throw new Error(`Failed to fetch summoner: ${summonerRes.status}`);
 				}
 				
 				const summoner = await summonerRes.json();
@@ -113,8 +119,8 @@ export async function GET({ url }) {
 					puuid: summoner.puuid
 				};
 			} catch (error) {
-				console.error(`Error fetching player ${i}:`, error);
-				// Fallback
+				console.error(` Error fetching player ${i} (${p.summonerName}):`, error.message);
+				// Return fallback data instead of failing completely
 				return {
 					rank: i + 1,
 					summonerName: p.summonerName || `Player${i + 1}`,

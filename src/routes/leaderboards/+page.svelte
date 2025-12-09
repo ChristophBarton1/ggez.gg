@@ -16,6 +16,7 @@
 	let selectedPatch = 'current'; // Current patch
 	let sortBy = 'soloQLP'; // Default sort by total LP
 	let sortDirection = 'desc'; // asc or desc
+	let expandedRows = new Set(); // Track which rows are expanded
 
 	// Rank filters
 	const ranks = [
@@ -168,6 +169,16 @@
 			filterTimeout = setTimeout(() => loadPlayers(), 500);
 		}
 		previousFilters = currentFilters;
+	}
+
+	// Toggle row expansion
+	function toggleRow(playerKey) {
+		expandedRows = new Set(expandedRows);
+		if (expandedRows.has(playerKey)) {
+			expandedRows.delete(playerKey);
+		} else {
+			expandedRows.add(playerKey);
+		}
 	}
 
 	// Search and sort
@@ -398,6 +409,8 @@
 					</thead>
 					<tbody>
 						{#each filteredPlayers as player, index (`${player.summonerName}-${player.tagLine}-${player.soloQLP}-${index}`)}
+							{@const playerKey = `${player.summonerName}-${player.rank}`}
+							{@const isExpanded = expandedRows.has(playerKey)}
 							<tr class="table-row" transition:fade={{ duration: 200 }}>
 								<td class="text-[#64748b] font-bold">{player.rank}</td>
 								<td>
@@ -422,22 +435,60 @@
 								<td class="winrate">{player.winRate}%</td>
 								<td class="text-hex-gold font-bold">{player.soloQLP} LP</td>
 								<td>
-									<div class="flex gap-1">
-										{#each player.topChampions.slice(0, 5) as champKey}
-											{#if championNames[champKey]}
-												<img 
-													src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${championNames[champKey].id}.png`, { width: 32 })}
-													alt={championNames[champKey].name}
-													title={championNames[champKey].name}
-													width="32"
-													height="32"
-													class="rounded"
-												/>
-											{/if}
-										{/each}
-									</div>
+									<!-- For Top 5: Show champions directly -->
+									{#if player.rank <= 5}
+										<div class="flex gap-1">
+											{#each player.topChampions.slice(0, 5) as champKey}
+												{#if championNames[champKey]}
+													<img 
+														src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${championNames[champKey].id}.png`, { width: 32 })}
+														alt={championNames[champKey].name}
+														title={championNames[champKey].name}
+														width="32"
+														height="32"
+														class="rounded"
+													/>
+												{/if}
+											{/each}
+										</div>
+									{:else}
+										<!-- For others: Expandable button -->
+										<button 
+											on:click={() => toggleRow(playerKey)}
+											class="expand-btn"
+											aria-expanded={isExpanded}
+										>
+											<span class="mr-2">Top 5 Champions</span>
+											<span class="arrow" class:expanded={isExpanded}>▶</span>
+										</button>
+									{/if}
 								</td>
 							</tr>
+							
+							<!-- Expanded row showing champions -->
+							{#if player.rank > 5 && isExpanded}
+								<tr class="expanded-row" transition:fade={{ duration: 200 }}>
+									<td colspan="7" style="padding: 1rem 2rem; background: rgba(10, 203, 230, 0.05);">
+										<div class="flex gap-3 items-center">
+											<span class="text-sm text-gray-400 font-semibold">Most Played Champions:</span>
+											{#each player.topChampions.slice(0, 5) as champKey}
+												{#if championNames[champKey]}
+													<div class="flex flex-col items-center gap-1">
+														<img 
+															src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${championNames[champKey].id}.png`, { width: 48 })}
+															alt={championNames[champKey].name}
+															width="48"
+															height="48"
+															class="rounded"
+														/>
+														<span class="text-xs text-gray-400">{championNames[champKey].name}</span>
+													</div>
+												{/if}
+											{/each}
+										</div>
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					</tbody>
 				</table>
@@ -747,4 +798,47 @@
 	}
 	.bar.up { background: #0acbe6; }
 	.bar.down { background: #e84057; }
+
+	/* Expand button styles */
+	.expand-btn {
+		background: rgba(10, 203, 230, 0.1);
+		border: 1px solid rgba(10, 203, 230, 0.3);
+		color: #0acbe6;
+		padding: 8px 16px;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 600;
+	}
+	.expand-btn:hover {
+		background: rgba(10, 203, 230, 0.2);
+		border-color: #0acbe6;
+		transform: translateY(-1px);
+	}
+	.expand-btn .arrow {
+		display: inline-block;
+		transition: transform 0.3s ease;
+		font-size: 0.7rem;
+	}
+	.expand-btn .arrow.expanded {
+		transform: rotate(90deg);
+	}
+
+	.expanded-row {
+		animation: slideDown 0.3s ease;
+	}
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 </style>

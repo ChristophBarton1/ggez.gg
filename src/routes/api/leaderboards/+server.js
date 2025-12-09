@@ -58,6 +58,9 @@ export async function GET({ url }) {
 
 		// Take top 10 for simplicity
 		allPlayers = allPlayers.slice(0, 10);
+		
+		// Debug: Check what fields we have
+		console.log('🔍 Sample player data:', JSON.stringify(allPlayers[0], null, 2));
 
 		// Different default champions for variety in spotlight
 		const defaultChampions = ['157', '238', '84', '777', '141', '555', '11', '64', '103', '245'];
@@ -68,30 +71,35 @@ export async function GET({ url }) {
 			await new Promise(resolve => setTimeout(resolve, i * 100));
 			
 			try {
-				// Fetch summoner details to get PUUID
-				const summonerRes = await fetch(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/${p.summonerId}?api_key=${RIOT_API_KEY}`);
-				
-				if (!summonerRes.ok) {
-					console.error(`❌ Summoner API failed for ${p.summonerName || p.summonerId}: ${summonerRes.status} ${summonerRes.statusText}`);
-					throw new Error(`Failed to fetch summoner: ${summonerRes.status}`);
-				}
-				
-				const summoner = await summonerRes.json();
-				
-				// Fetch RiotID (gameName#tagLine) using Account-v1 API
-				let gameName = p.summonerName || summoner.name || `Player${i + 1}`;
+				// We already have PUUID from League API! Use it directly for Account API
+				let gameName = `Player${i + 1}`;
 				let tagLine = region.toUpperCase();
+				let profileIconId = 29;
 				
+				// Fetch RiotID (gameName#tagLine) using Account-v1 API with PUUID
 				try {
-					const accountRes = await fetch(`https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-puuid/${summoner.puuid}?api_key=${RIOT_API_KEY}`);
+					const accountRes = await fetch(`https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-puuid/${p.puuid}?api_key=${RIOT_API_KEY}`);
 					if (accountRes.ok) {
 						const account = await accountRes.json();
 						gameName = account.gameName || gameName;
 						tagLine = account.tagLine || tagLine;
+						console.log(`✅ Got name: ${gameName}#${tagLine}`);
+					} else {
+						console.warn(`⚠️ Account API failed for player ${i}: ${accountRes.status}`);
 					}
 				} catch (e) {
-					// Fallback to old name if Account API fails
-					console.warn(`Account API failed for ${summoner.puuid}`);
+					console.warn(`⚠️ Account API error for player ${i}:`, e.message);
+				}
+				
+				// Optionally fetch summoner for profileIconId (not critical)
+				try {
+					const summonerRes = await fetch(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${p.puuid}?api_key=${RIOT_API_KEY}`);
+					if (summonerRes.ok) {
+						const summoner = await summonerRes.json();
+						profileIconId = summoner.profileIconId || 29;
+					}
+				} catch (e) {
+					// Profile icon not critical, use default
 				}
 				
 				return {
@@ -114,16 +122,15 @@ export async function GET({ url }) {
 						defaultChampions[(i + 3) % defaultChampions.length],
 						defaultChampions[(i + 4) % defaultChampions.length]
 					],
-					profileIconId: summoner.profileIconId || 29,
-					summonerId: p.summonerId,
-					puuid: summoner.puuid
+					profileIconId: profileIconId,
+					puuid: p.puuid
 				};
 			} catch (error) {
-				console.error(` Error fetching player ${i} (${p.summonerName}):`, error.message);
+				console.error(`⚠️ Error fetching player ${i}:`, error.message);
 				// Return fallback data instead of failing completely
 				return {
 					rank: i + 1,
-					summonerName: p.summonerName || `Player${i + 1}`,
+					summonerName: `Player${i + 1}`,
 					tagLine: region.toUpperCase(),
 					tier: p.tier,
 					lp: p.leaguePoints,
@@ -142,7 +149,7 @@ export async function GET({ url }) {
 						defaultChampions[(i + 4) % defaultChampions.length]
 					],
 					profileIconId: 29,
-					summonerId: p.summonerId
+					puuid: p.puuid
 				};
 			}
 		});

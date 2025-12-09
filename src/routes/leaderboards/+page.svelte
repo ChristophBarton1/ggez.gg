@@ -3,10 +3,9 @@
 	import { fade } from 'svelte/transition';
 	import { optimizeRiotImage } from '$lib/utils/imageProxy.js';
 
-	let champions = [];
-	let filteredChampions = [];
-	let spotlightChampions = [];
-	let championNames = {}; // championId -> name mapping
+	let players = [];
+	let filteredPlayers = [];
+	let spotlightPlayers = [];
 	let loading = true;
 	let isInitialized = false; // Prevent loading screen flicker on first load
 	let searchQuery = '';
@@ -113,8 +112,8 @@
 					});
 				}
 				
-				// Fetch rising stars from our API with all filters
-				const metaRes = await fetch(`/api/rising-stars?region=${selectedRegion}&rank=${selectedRank}&role=${selectedRole}&queue=${selectedQueue}&timeframe=${selectedPatch}`);
+				// Fetch leaderboards from our API  
+				const metaRes = await fetch(`/api/leaderboards?region=${selectedRegion}&role=${selectedRole}&timeframe=${selectedPatch}`);
 				const metaData = await metaRes.json();
 				
 				if (!metaData.success) {
@@ -141,7 +140,6 @@
 							name: champInfo.name,
 							tier: stat.tier,
 							winRate: stat.winRate,
-							winRateChange: stat.winRateChange || 0,
 							pickRate: stat.pickRate,
 							banRate: stat.banRate,
 							games: stat.games,
@@ -158,7 +156,7 @@
 				// Get top 5 for spotlight
 				spotlightChampions = champions.slice(0, 5).map((c, i) => ({
 					...c,
-					tag: i === 0 ? `Rising Fast • +${c.winRateChange.toFixed(1)}% WR` : `+${c.winRateChange.toFixed(1)}% WR`,
+					tag: i === 0 ? `God Tier • ${c.winRate}% WR` : `${c.tier} Tier`,
 					tagColor: i === 0 ? '#c8aa6e' : ['#a855f7', '#3b82f6', '#10b981', '#e84057'][i - 1]
 				}));
 				
@@ -250,8 +248,8 @@
 </script>
 
 <svelte:head>
-	<title>Rising Stars - GGEZ.GG | Hidden OP Picks</title>
-	<meta name="description" content="Discover rising champions with increasing win rates before they become meta. Find hidden OP picks early!">
+	<title>Leaderboards - GGEZ.GG | Top Players Rankings</title>
+	<meta name="description" content="View the top League of Legends players, fastest climbers, and regional leaderboards.">
 </svelte:head>
 
 <!-- Background with Grid Pattern -->
@@ -272,7 +270,7 @@
 	{:else if !loading}
 		<!-- Header -->
 		<div class="header-title mb-5">
-			Rising <span class="text-[#0acbe6]">Stars</span>
+			Top <span class="text-[#0acbe6]">Players</span>
 		</div>
 
 		<!-- Spotlight Grid (Top 5 Meta Champions) -->
@@ -292,8 +290,8 @@
 					<div class="meta-tag">{spotlightChampions[0].tag}</div>
 					<div class="hero-name">{spotlightChampions[0].name}</div>
 					<div class="hero-stat">
-						<span>Win Rate: <b>{spotlightChampions[0].winRate}%</b></span>
-						<span>Trend: <b class="text-green-400">+{spotlightChampions[0].winRateChange.toFixed(1)}%</b></span>
+						<span>Pick Rate: <b>{spotlightChampions[0].pickRate}%</b></span>
+						<span>Ban Rate: <b>{spotlightChampions[0].banRate}%</b></span>
 					</div>
 				</div>
 			</div>
@@ -338,7 +336,7 @@
 
 		<!-- Statistics Section -->
 		<div class="header-title mb-5" style="font-size: 1.5rem;">
-			Trending <span class="text-[#0acbe6]">Champions</span>
+			Player <span class="text-[#0acbe6]">Rankings</span>
 		</div>
 
 		<!-- Data Panel -->

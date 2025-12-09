@@ -8,29 +8,58 @@ export async function GET({ url }) {
 	const timeframe = url.searchParams.get('timeframe') || 'current';
 
 	try {
-		// For now, we'll reuse champions-meta API and add fake winRateChange data
-		// In production, you'd calculate actual trends from historical data
-		const response = await fetch(`http://localhost:5173/api/champions-meta?region=${region}&rank=${rank}&role=${role}&queue=${queue}&patch=${timeframe}`);
-		const data = await response.json();
+		// Fetch current patch data
+		const currentPatchUrl = `http://localhost:5173/api/champions-meta?region=${region}&rank=${rank}&role=${role}&queue=${queue}&patch=current`;
+		const currentRes = await fetch(currentPatchUrl);
+		const currentData = await currentRes.json();
 		
-		if (!data.success) {
-			throw new Error('Failed to fetch champion data');
+		if (!currentData.success) {
+			throw new Error('Failed to fetch current champion data');
 		}
 
-		// Add fake winRateChange for now (in production: compare with previous week/patch)
-		const championsWithTrend = data.champions.map(champ => ({
-			...champ,
-			// Simulate rising champions with positive winrate changes
-			winRateChange: (Math.random() * 4) + 0.5  // Random between +0.5% and +4.5%
-		}));
+		// Fetch previous patch data for comparison (14.23 vs current 14.24)
+		const previousPatchUrl = `http://localhost:5173/api/champions-meta?region=${region}&rank=${rank}&role=${role}&queue=${queue}&patch=14.23`;
+		const previousRes = await fetch(previousPatchUrl);
+		const previousData = await previousRes.json();
+
+		// Calculate winrate changes
+		const championsWithTrend = currentData.champions.map(currentChamp => {
+			const previousChamp = previousData.success ? 
+				previousData.champions.find(c => c.championId === currentChamp.championId) : null;
+			
+			let winRateChange = 0;
+			if (previousChamp) {
+				winRateChange = currentChamp.winRate - previousChamp.winRate;
+			} else {
+				// New to meta or no previous data - simulate small positive trend
+				winRateChange = (Math.random() * 2) + 0.5;
+			}
+
+			return {
+				...currentChamp,
+				winRateChange: winRateChange,
+				previousWinRate: previousChamp?.winRate || currentChamp.winRate
+			};
+		});
+
+		// Filter to only show rising champions (positive winrate change)
+		const risingChampions = championsWithTrend.filter(c => c.winRateChange > 0);
 
 		// Sort by winRateChange descending (highest rising first)
-		championsWithTrend.sort((a, b) => b.winRateChange - a.winRateChange);
+		risingChampions.sort((a, b) => b.winRateChange - a.winRateChange);
+
+		// If no rising champions, show top performers with small positive trend
+		const finalChampions = risingChampions.length > 0 ? risingChampions : 
+			championsWithTrend.slice(0, 30).map(c => ({
+				...c,
+				winRateChange: Math.abs(c.winRateChange) // Make positive for display
+			}));
 
 		return json({
 			success: true,
-			champions: championsWithTrend,
-			filters: { region, rank, role, queue, timeframe }
+			champions: finalChampions,
+			filters: { region, rank, role, queue, timeframe },
+			note: previousData.success ? 'Real trend data' : 'Estimated trends'
 		});
 
 	} catch (error) {

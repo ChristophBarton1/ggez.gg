@@ -8,6 +8,14 @@
 	let mobileMenuOpen = false;
 	let isPageFullscreen = false;
 	let loginOverlayOpen = false;
+	let settingsOverlayOpen = false;
+	
+	// Settings
+	let darkMode = true;
+	let autoRefresh = false;
+	let showRankEmblems = true;
+	let animationsEnabled = true;
+	let language = 'en';
 	
 	onMount(() => {
 		// Track fullscreen state (client-side only)
@@ -66,27 +74,9 @@
 		</div>
 	{/if}
 	
-	<!-- Right Icons -->
+	<!-- Right Icons (Reordered: Fullscreen, Settings, Profile) -->
 	<div class="flex items-center gap-2 md:gap-3">
-		<!-- User/Login Icon -->
-		<button 
-			on:click={() => loginOverlayOpen = !loginOverlayOpen}
-			class="icon-btn" 
-			title="Login">
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-			</svg>
-		</button>
-		
-		<!-- Settings -->
-		<button class="icon-btn" title="Settings">
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-			</svg>
-		</button>
-		
-		<!-- Fullscreen Button (NEW!) -->
+		<!-- Fullscreen Icon (LEFTMOST) -->
 		<button 
 			on:click={toggleFullscreen}
 			class="icon-btn"
@@ -100,6 +90,27 @@
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
 				</svg>
 			{/if}
+		</button>
+		
+		<!-- Settings Icon (MIDDLE) -->
+		<button 
+			on:click={() => settingsOverlayOpen = !settingsOverlayOpen}
+			class="icon-btn" 
+			title="Settings">
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+			</svg>
+		</button>
+		
+		<!-- User/Profile Icon (RIGHTMOST) -->
+		<button 
+			on:click={() => loginOverlayOpen = !loginOverlayOpen}
+			class="icon-btn" 
+			title="Login / Profile">
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+			</svg>
 		</button>
 	</div>
 </nav>
@@ -197,6 +208,96 @@
 			<div class="text-center mt-4 text-sm text-gray-500">
 				Don't have an account? <button class="text-hex-gold hover:text-white transition-colors">Sign up</button>
 			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Settings Overlay -->
+{#if settingsOverlayOpen}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+		<div class="bg-hex-darker border border-hex-gold/30 rounded-xl p-8 max-w-lg w-full mx-4 relative">
+			<!-- Close Button -->
+			<button 
+				on:click={() => settingsOverlayOpen = false}
+				class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+				title="Close">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+
+			<!-- Settings Title -->
+			<h2 class="font-cinzel text-2xl text-hex-gold mb-6 text-center tracking-wider">SETTINGS</h2>
+			
+			<!-- Settings Options -->
+			<div class="space-y-5">
+				<!-- Dark Mode Toggle -->
+				<div class="flex items-center justify-between p-4 bg-black/30 rounded-lg border border-white/5">
+					<div>
+						<div class="text-white font-semibold mb-1">Dark Mode</div>
+						<div class="text-gray-400 text-xs">Toggle dark theme</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input type="checkbox" bind:checked={darkMode} class="sr-only peer" />
+						<div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-hex-gold"></div>
+					</label>
+				</div>
+
+				<!-- Auto Refresh -->
+				<div class="flex items-center justify-between p-4 bg-black/30 rounded-lg border border-white/5">
+					<div>
+						<div class="text-white font-semibold mb-1">Auto Refresh</div>
+						<div class="text-gray-400 text-xs">Automatically refresh match data</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input type="checkbox" bind:checked={autoRefresh} class="sr-only peer" />
+						<div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-hex-gold"></div>
+					</label>
+				</div>
+
+				<!-- Show Rank Emblems -->
+				<div class="flex items-center justify-between p-4 bg-black/30 rounded-lg border border-white/5">
+					<div>
+						<div class="text-white font-semibold mb-1">Rank Emblems</div>
+						<div class="text-gray-400 text-xs">Display animated rank emblems</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input type="checkbox" bind:checked={showRankEmblems} class="sr-only peer" />
+						<div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-hex-gold"></div>
+					</label>
+				</div>
+
+				<!-- Animations -->
+				<div class="flex items-center justify-between p-4 bg-black/30 rounded-lg border border-white/5">
+					<div>
+						<div class="text-white font-semibold mb-1">Animations</div>
+						<div class="text-gray-400 text-xs">Enable page animations</div>
+					</div>
+					<label class="relative inline-flex items-center cursor-pointer">
+						<input type="checkbox" bind:checked={animationsEnabled} class="sr-only peer" />
+						<div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-hex-gold"></div>
+					</label>
+				</div>
+
+				<!-- Language Selection -->
+				<div class="p-4 bg-black/30 rounded-lg border border-white/5">
+					<div class="text-white font-semibold mb-3">Language</div>
+					<select bind:value={language} class="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white focus:border-hex-gold focus:outline-none transition-colors">
+						<option value="en">🇬🇧 English</option>
+						<option value="de">🇩🇪 Deutsch</option>
+						<option value="fr">🇫🇷 Français</option>
+						<option value="es">🇪🇸 Español</option>
+						<option value="kr">🇰🇷 한국어</option>
+					</select>
+				</div>
+			</div>
+
+			<!-- Save Button -->
+			<button 
+				on:click={() => settingsOverlayOpen = false}
+				class="w-full py-3 bg-hex-gold text-black font-bold rounded-lg hover:bg-white transition-all mt-6">
+				SAVE SETTINGS
+			</button>
 		</div>
 	</div>
 {/if}

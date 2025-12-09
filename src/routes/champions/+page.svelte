@@ -8,6 +8,7 @@
 	let spotlightChampions = [];
 	let championNames = {}; // championId -> name mapping
 	let loading = true;
+	let isInitialized = false; // Prevent loading screen flicker on first load
 	let searchQuery = '';
 	let selectedRole = 'all';
 	let selectedRank = 'platinum_plus';
@@ -181,7 +182,6 @@
 	
 	// Debounced reload when filters change
 	let filterTimeout;
-	let isInitialized = false;
 	$: {
 		if (selectedRank && selectedRole && selectedRegion && selectedQueue && selectedPatch) {
 			if (isInitialized) {
@@ -257,12 +257,13 @@
 
 <div class="max-w-[1400px] mx-auto px-5 py-10">
 
-	{#if loading}
+	{#if loading && isInitialized}
+		<!-- Show loading screen only after initial load -->
 		<div class="flex flex-col items-center justify-center py-32 gap-4">
 			<div class="w-16 h-16 border-4 border-[#0acbe6]/30 border-t-[#c8aa6e] rounded-full animate-spin"></div>
 			<div class="font-cinzel text-[#c8aa6e] animate-pulse">Loading Meta Data...</div>
 		</div>
-	{:else}
+	{:else if !loading}
 		<!-- Header -->
 		<div class="header-title mb-5">
 			Current <span class="text-[#0acbe6]">Meta</span>
@@ -270,7 +271,7 @@
 
 		<!-- Spotlight Grid (Top 5 Meta Champions) -->
 		{#if spotlightChampions.length >= 5}
-		<div class="spotlight-grid mb-16">
+		<div class="spotlight-grid mb-20">
 			<!-- Hero Card -->
 			<div class="spotlight-card spotlight-hero group cursor-pointer">
 				<img 
@@ -487,7 +488,7 @@
 		display: grid;
 		grid-template-columns: 2fr 1fr 1fr;
 		gap: 20px;
-		margin-bottom: 60px;
+		margin-bottom: 80px;
 		height: 350px;
 	}
 

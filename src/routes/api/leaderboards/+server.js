@@ -53,7 +53,7 @@ export async function GET({ url }) {
 		// Process players
 		const players = allPlayers.map((p, i) => ({
 			rank: i + 1,
-			summonerName: p.summonerName || 'Unknown',
+			summonerName: p.summonerName || `Player${i + 1}`,
 			tagLine: `${region.toUpperCase()}`,
 			tier: p.tier,
 			lp: p.leaguePoints,
@@ -65,7 +65,8 @@ export async function GET({ url }) {
 			losses: p.losses,
 			mainChampion: '157', // Yasuo as default - would need match history
 			topChampions: ['157', '238', '84', '7', '64'], // Mock - needs match history API
-			profileIconId: 29
+			profileIconId: p.profileIconId || 29,
+			summonerId: p.summonerId // For unique identification
 		}));
 
 		return json({

@@ -397,7 +397,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each filteredPlayers as player (player.summonerName + player.tagLine)}
+						{#each filteredPlayers as player, index (`${player.summonerName}-${player.tagLine}-${player.soloQLP}-${index}`)}
 							<tr class="table-row" transition:fade={{ duration: 200 }}>
 								<td class="text-[#64748b] font-bold">{player.rank}</td>
 								<td>

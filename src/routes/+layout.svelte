@@ -1,6 +1,8 @@
 <script>
   import '../app.css';
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import Navbar from '$lib/components/Navbar.svelte';
 
   // ⚡ PERFORMANCE FIX: Service Worker temporarily disabled due to corruption issues
   // TODO: Re-implement with proper Workbox or modern caching strategy
@@ -15,6 +17,12 @@
       });
     }
   });
+  
+  $: isHomepage = $page.url.pathname === '/';
 </script>
 
+<!-- Global Navbar on all pages -->
+<Navbar showSearchInNav={!isHomepage} />
+
+<!-- Page Content -->
 <slot />

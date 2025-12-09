@@ -270,6 +270,7 @@
 
 		<!-- Spotlight Grid (Top 5 Meta Champions) -->
 		{#if spotlightChampions.length >= 5}
+		{#key spotlightChampions.map(c => c.championId).join('-')}
 		<div class="spotlight-grid mb-16">
 			<!-- Hero Card -->
 			<div class="spotlight-card spotlight-hero group cursor-pointer">
@@ -327,6 +328,7 @@
 				</div>
 			</div>
 		</div>
+		{/key}
 		{/if}
 
 		<!-- Statistics Section -->

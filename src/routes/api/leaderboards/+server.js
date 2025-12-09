@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { RIOT_API_KEY } from '$env/static/private';
 
 // Simple in-memory cache (1 hour TTL)
+// Note: Cache is cleared on server restart
 let cache = {
 	data: null,
 	timestamp: 0,
@@ -11,6 +12,9 @@ let cache = {
 // Helper: Fetch top 5 champions for a player from match history
 async function getTopChampions(puuid, regional, platform, apiKey) {
 	try {
+		// Add delay before fetching to respect rate limits
+		await new Promise(resolve => setTimeout(resolve, 200));
+		
 		// Fetch last 20 ranked solo/duo games
 		const matchListUrl = `https://${regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=20&api_key=${apiKey}`;
 		const matchListRes = await fetch(matchListUrl);
@@ -26,19 +30,20 @@ async function getTopChampions(puuid, regional, platform, apiKey) {
 			return null;
 		}
 		
-		// Fetch match details (limit to 10 to avoid rate limiting)
-		const matchPromises = matchIds.slice(0, 10).map(async (matchId) => {
+		// Fetch match details SEQUENTIALLY (one at a time) to avoid rate limiting
+		const matches = [];
+		for (let i = 0; i < Math.min(8, matchIds.length); i++) {
 			try {
-				const matchUrl = `https://${regional}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${apiKey}`;
+				await new Promise(resolve => setTimeout(resolve, 150)); // 150ms delay between each match
+				const matchUrl = `https://${regional}.api.riotgames.com/lol/match/v5/matches/${matchIds[i]}?api_key=${apiKey}`;
 				const matchRes = await fetch(matchUrl);
-				if (!matchRes.ok) return null;
-				return await matchRes.json();
+				if (matchRes.ok) {
+					matches.push(await matchRes.json());
+				}
 			} catch (e) {
-				return null;
+				// Continue with next match
 			}
-		});
-		
-		const matches = (await Promise.all(matchPromises)).filter(m => m !== null);
+		}
 		
 		// Count champion frequency
 		const championCounts = {};
@@ -177,7 +182,7 @@ export async function GET({ url }) {
 					// Profile icon not critical, use default
 				}
 				
-				// 🎮 For TOP 5 players: Fetch real champions from match history!
+				// 🎮 For TOP 3 players: Fetch real champions from match history!
 				let topChampions = [
 					defaultChampions[i % defaultChampions.length],
 					defaultChampions[(i + 1) % defaultChampions.length],
@@ -186,7 +191,7 @@ export async function GET({ url }) {
 					defaultChampions[(i + 4) % defaultChampions.length]
 				];
 				
-				if (i < 5) {
+				if (i < 3) {
 					console.log(`🔍 Fetching match history for top ${i + 1} player: ${gameName}...`);
 					const realChampions = await getTopChampions(p.puuid, regional, platform, RIOT_API_KEY);
 					if (realChampions && realChampions.length > 0) {

@@ -435,9 +435,9 @@
 								<td class="winrate">{player.winRate}%</td>
 								<td class="text-hex-gold font-bold">{player.soloQLP} LP</td>
 								<td>
-									<!-- For Top 5: Show champions directly -->
-									{#if player.rank <= 5}
-										<div class="flex gap-1">
+									<!-- For Top 3: Show champions directly (real data from match history) -->
+									{#if player.rank <= 3}
+										<div class="flex gap-1 items-center">
 											{#each player.topChampions.slice(0, 5) as champKey}
 												{#if championNames[champKey]}
 													<img 
@@ -450,15 +450,16 @@
 													/>
 												{/if}
 											{/each}
+											<span class="text-xs text-green-400 ml-2">✓ Real</span>
 										</div>
 									{:else}
-										<!-- For others: Expandable button -->
+										<!-- For others (4-10): Expandable button -->
 										<button 
 											on:click={() => toggleRow(playerKey)}
 											class="expand-btn"
 											aria-expanded={isExpanded}
 										>
-											<span class="mr-2">Top 5 Champions</span>
+											<span class="mr-2">View Champions</span>
 											<span class="arrow" class:expanded={isExpanded}>▶</span>
 										</button>
 									{/if}
@@ -466,7 +467,7 @@
 							</tr>
 							
 							<!-- Expanded row showing champions -->
-							{#if player.rank > 5 && isExpanded}
+							{#if player.rank > 3 && isExpanded}
 								<tr class="expanded-row" transition:fade={{ duration: 200 }}>
 									<td colspan="7" style="padding: 1rem 2rem; background: rgba(10, 203, 230, 0.05);">
 										<div class="flex gap-3 items-center">
@@ -775,29 +776,8 @@
 		background: linear-gradient(135deg, #a855f7, #6b21a8);
 		color: #fff;
 	}
-	.tier-b {
-		background: linear-gradient(135deg, #3b82f6, #1e40af);
-		color: #fff;
-	}
 
 	.winrate { color: #0acbe6; font-weight: 600; }
-	.banrate { color: #64748b; }
-
-	.trend-line {
-		width: 60px;
-		height: 20px;
-		display: flex;
-		align-items: flex-end;
-		gap: 2px;
-		opacity: 0.7;
-	}
-	.bar {
-		width: 20%;
-		background: #64748b;
-		border-radius: 2px;
-	}
-	.bar.up { background: #0acbe6; }
-	.bar.down { background: #e84057; }
 
 	/* Expand button styles */
 	.expand-btn {

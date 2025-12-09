@@ -121,7 +121,7 @@
 					flexTier: p.flexTier || 'Unranked',
 					flexLP: p.flexLP || 0,
 					lpGain: p.lpGain,
-					winRate: p.winRate.toFixed(1),
+					winRate: p.winRate, // Already formatted as string from API
 					wins: p.wins,
 					losses: p.losses,
 					mainChampion: p.mainChampion,

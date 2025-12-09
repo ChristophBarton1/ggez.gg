@@ -1,4 +1,5 @@
 <script>
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
 	
@@ -7,18 +8,25 @@
 	let mobileMenuOpen = false;
 	let isPageFullscreen = false;
 	
-	// Track fullscreen state
-	if (typeof document !== 'undefined') {
-		document.addEventListener('fullscreenchange', () => {
+	onMount(() => {
+		// Track fullscreen state (client-side only)
+		const handleFullscreenChange = () => {
 			isPageFullscreen = !!document.fullscreenElement;
-		});
-	}
+		};
+		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		
+		return () => {
+			document.removeEventListener('fullscreenchange', handleFullscreenChange);
+		};
+	});
 	
 	function toggleFullscreen() {
-		if (document.fullscreenElement) {
-			document.exitFullscreen();
-		} else {
-			document.documentElement.requestFullscreen();
+		if (typeof document !== 'undefined') {
+			if (document.fullscreenElement) {
+				document.exitFullscreen();
+			} else {
+				document.documentElement.requestFullscreen();
+			}
 		}
 	}
 	

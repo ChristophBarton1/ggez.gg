@@ -9,8 +9,9 @@
 	let isPageFullscreen = false;
 	let loginOverlayOpen = false;
 	let settingsOverlayOpen = false;
+	let showSaveToast = false;
 	
-	// Settings
+	// Settings (loaded from localStorage)
 	let darkMode = true;
 	let autoRefresh = false;
 	let showRankEmblems = true;
@@ -18,6 +19,20 @@
 	let language = 'en';
 	
 	onMount(() => {
+		// Load settings from localStorage
+		const savedSettings = localStorage.getItem('ggez-settings');
+		if (savedSettings) {
+			const settings = JSON.parse(savedSettings);
+			darkMode = settings.darkMode ?? true;
+			autoRefresh = settings.autoRefresh ?? false;
+			showRankEmblems = settings.showRankEmblems ?? true;
+			animationsEnabled = settings.animationsEnabled ?? true;
+			language = settings.language ?? 'en';
+		}
+		
+		// Apply dark mode
+		applyDarkMode();
+		
 		// Track fullscreen state (client-side only)
 		const handleFullscreenChange = () => {
 			isPageFullscreen = !!document.fullscreenElement;
@@ -28,6 +43,40 @@
 			document.removeEventListener('fullscreenchange', handleFullscreenChange);
 		};
 	});
+	
+	function applyDarkMode() {
+		if (typeof document !== 'undefined') {
+			if (darkMode) {
+				document.documentElement.classList.add('dark');
+			} else {
+				document.documentElement.classList.remove('dark');
+			}
+		}
+	}
+	
+	function saveSettings() {
+		// Save to localStorage
+		const settings = {
+			darkMode,
+			autoRefresh,
+			showRankEmblems,
+			animationsEnabled,
+			language
+		};
+		localStorage.setItem('ggez-settings', JSON.stringify(settings));
+		
+		// Apply settings
+		applyDarkMode();
+		
+		// Show toast
+		showSaveToast = true;
+		setTimeout(() => {
+			showSaveToast = false;
+		}, 3000);
+		
+		// Close overlay
+		settingsOverlayOpen = false;
+	}
 	
 	function toggleFullscreen() {
 		if (typeof document !== 'undefined') {
@@ -294,10 +343,22 @@
 
 			<!-- Save Button -->
 			<button 
-				on:click={() => settingsOverlayOpen = false}
+				on:click={saveSettings}
 				class="w-full py-3 bg-hex-gold text-black font-bold rounded-lg hover:bg-white transition-all mt-6">
 				SAVE SETTINGS
 			</button>
+		</div>
+	</div>
+{/if}
+
+<!-- Save Toast Notification -->
+{#if showSaveToast}
+	<div class="fixed top-24 right-4 z-50 animate-fade-in">
+		<div class="bg-hex-gold text-black px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3">
+			<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+			</svg>
+			<span class="font-semibold">Settings saved!</span>
 		</div>
 	</div>
 {/if}

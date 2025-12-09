@@ -284,8 +284,8 @@
 						</div>
 					</a>
 
-					<!-- Card 2: AI Coach - Zed (WebP 95%) -->
-					<div class="video-card group">
+					<!-- Card 2: Rising Stars - Zed (WebP 95%) -->
+					<a href="/rising-stars" class="video-card group">
 						<div class="video-card-thumb">
 							<img 
 								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg&w=660&h=390&output=webp&q=95"
@@ -297,15 +297,15 @@
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>
-							<span class="video-badge dev">DEV</span>
+							<span class="video-badge time">LIVE</span>
 						</div>
 						<div class="video-card-title">
-							/dev: AI Coach Preview
+							Rising Stars: Hidden OP Picks
 						</div>
-					</div>
+					</a>
 
-					<!-- Card 3: Ranked - Akali (WebP 95%) -->
-					<div class="video-card group">
+					<!-- Card 3: Leaderboards - Akali (WebP 95%) -->
+					<a href="/leaderboards" class="video-card group">
 						<div class="video-card-thumb">
 							<img 
 								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Akali_0.jpg&w=660&h=390&output=webp&q=95"
@@ -317,15 +317,15 @@
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>
-							<span class="video-badge dev">DEV</span>
+							<span class="video-badge time">TOP 100</span>
 						</div>
 						<div class="video-card-title">
-							/dev: Ranked 2026
+							Leaderboards: Top Players
 						</div>
-					</div>
+					</a>
 
-					<!-- Card 4: Swiftplay - Jinx (WebP 95%) -->
-					<div class="video-card group">
+					<!-- Card 4: Regional Meta - Jinx (WebP 95%) -->
+					<a href="/regions" class="video-card group">
 						<div class="video-card-thumb">
 							<img 
 								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg&w=660&h=390&output=webp&q=95"
@@ -337,12 +337,12 @@
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>
-							<span class="video-badge dev">DEV</span>
+							<span class="video-badge time">&#x1F310;</span>
 						</div>
 						<div class="video-card-title">
-							/dev: A Swifter Swiftplay
+							Regional Meta Wars
 						</div>
-					</div>
+					</a>
 
 				</div>
 			</div>

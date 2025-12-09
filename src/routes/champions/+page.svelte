@@ -255,7 +255,7 @@
 
 <!-- Navigation removed - now using global Navbar from layout -->
 
-<div class="max-w-[1400px] mx-auto px-5 py-10">
+<div class="max-w-[1400px] mx-auto px-5 py-10" style="padding-top: 80px;">
 
 	{#if loading}
 		<div class="flex flex-col items-center justify-center py-32 gap-4">

@@ -384,7 +384,7 @@
 
 {#if loading}
 	<!-- ⚡ INSTANT SKELETON LOADER - Appears immediately for perceived speed -->
-	<div class="dashboard-grid max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-8 lg:gap-10 my-6 sm:my-8 lg:my-12 px-4 sm:px-6 lg:px-10 pb-12 sm:pb-24 animate-fade-in">
+	<div class="dashboard-grid max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-8 lg:gap-10 px-4 sm:px-6 lg:px-10 pb-12 sm:pb-24 animate-fade-in" style="padding-top: 100px;">
 		<!-- LEFT - Profile Skeleton -->
 		<div class="shard-card glass-card border border-hex-gold/30 p-8 rounded-xl">
 			<div class="w-28 h-28 rounded-full bg-hex-gold/20 animate-pulse mb-5"></div>
@@ -415,12 +415,12 @@
 		</div>
 	</div>
 {:else if error}
-	<div class="min-h-screen flex items-center justify-center">
+	<div class="min-h-screen flex items-center justify-center" style="padding-top: 100px;">
 		<div class="text-hex-red text-2xl font-cinzel">{error}</div>
 	</div>
 {:else if summoner}
 	<!-- Dashboard Grid -->
-	<div class="dashboard-grid max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-8 lg:gap-10 my-6 sm:my-8 lg:my-12 px-4 sm:px-6 lg:px-10 pb-12 sm:pb-24 animate-fade-in-up">
+	<div class="dashboard-grid max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-8 lg:gap-10 px-4 sm:px-6 lg:px-10 pb-12 sm:pb-24 animate-fade-in-up" style="padding-top: 100px;">
 		
 		<!-- LEFT COLUMN - Profile Card -->
 		<div class="shard-card glass-card border border-hex-gold/30 p-8 rounded-xl">

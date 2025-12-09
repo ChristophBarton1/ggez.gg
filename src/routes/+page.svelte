@@ -229,9 +229,9 @@
 			<!-- Bottom Section: Trailer + Cards -->
 			<div class="mt-auto pb-2 md:pb-3">
 				<!-- Trailer Info (LEFT BOTTOM) - Hidden on Mobile -->
-				<div class="hidden md:block mb-3 md:mb-4 max-w-xl">
+				<div class="hidden md:block mb-6 md:mb-8 max-w-xl">
 					<h2 class="text-xl sm:text-2xl md:text-2xl font-bold text-white mb-2">Season 2025: Summoner's Destiny</h2>
-					<p class="text-gray-300 mb-3 leading-relaxed text-sm">
+					<p class="text-gray-300 mb-4 leading-relaxed text-sm">
 						Centuries ago, Zaahen made a choice. Now, Xin Zhao must make his own.
 					</p>
 					<div class="flex items-center gap-3 md:gap-4 flex-wrap">

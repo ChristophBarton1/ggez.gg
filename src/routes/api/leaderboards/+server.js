@@ -2,16 +2,16 @@ import { json } from '@sveltejs/kit';
 import { RIOT_API_KEY } from '$env/static/private';
 
 const REGION_ROUTING = {
-	'euw': { platform: 'euw1', routing: 'europe' },
-	'eune': { platform: 'eun1', routing: 'europe' },
-	'na': { platform: 'na1', routing: 'americas' },
-	'br': { platform: 'br1', routing: 'americas' },
-	'lan': { platform: 'la1', routing: 'americas' },
-	'las': { platform: 'la2', routing: 'americas' },
-	'kr': { platform: 'kr', routing: 'asia' },
-	'jp': { platform: 'jp1', routing: 'asia' },
-	'oce': { platform: 'oc1', routing: 'sea' },
-	'tr': { platform: 'tr1', routing: 'europe' }
+	'euw': { platform: 'euw1', routing: 'europe', regional: 'europe' },
+	'eune': { platform: 'eun1', routing: 'europe', regional: 'europe' },
+	'na': { platform: 'na1', routing: 'americas', regional: 'americas' },
+	'br': { platform: 'br1', routing: 'americas', regional: 'americas' },
+	'lan': { platform: 'la1', routing: 'americas', regional: 'americas' },
+	'las': { platform: 'la2', routing: 'americas', regional: 'americas' },
+	'kr': { platform: 'kr', routing: 'asia', regional: 'asia' },
+	'jp': { platform: 'jp1', routing: 'asia', regional: 'asia' },
+	'oce': { platform: 'oc1', routing: 'sea', regional: 'sea' },
+	'tr': { platform: 'tr1', routing: 'europe', regional: 'europe' }
 };
 
 export async function GET({ url }) {
@@ -19,7 +19,7 @@ export async function GET({ url }) {
 	const role = url.searchParams.get('role') || 'all';
 	const timeframe = url.searchParams.get('timeframe') || '7d';
 
-	const { platform } = REGION_ROUTING[region] || REGION_ROUTING['euw'];
+	const { platform, regional } = REGION_ROUTING[region] || REGION_ROUTING['euw'];
 
 	try {
 		// Fetch Challenger, Grandmaster, and Master players
@@ -62,13 +62,26 @@ export async function GET({ url }) {
 				
 				const summoner = await summonerRes.json();
 				
-				// Use summonerName from league entry, fallback to summoner.name
-				const displayName = p.summonerName || summoner.name || `Player${i + 1}`;
+				// Fetch RiotID (gameName#tagLine) using Account-v1 API
+				let gameName = p.summonerName || summoner.name || `Player${i + 1}`;
+				let tagLine = region.toUpperCase();
+				
+				try {
+					const accountRes = await fetch(`https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-puuid/${summoner.puuid}?api_key=${RIOT_API_KEY}`);
+					if (accountRes.ok) {
+						const account = await accountRes.json();
+						gameName = account.gameName || gameName;
+						tagLine = account.tagLine || tagLine;
+					}
+				} catch (e) {
+					// Fallback to old name if Account API fails
+					console.warn(`Account API failed for ${summoner.puuid}`);
+				}
 				
 				return {
 					rank: i + 1,
-					summonerName: displayName,
-					tagLine: region.toUpperCase(),
+					summonerName: gameName,
+					tagLine: tagLine,
 					tier: p.tier,
 					lp: p.leaguePoints,
 					flexTier: 'Unranked',

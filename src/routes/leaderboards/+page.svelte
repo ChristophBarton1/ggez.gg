@@ -14,7 +14,7 @@
 	let selectedRegion = 'euw'; // Default to EUW
 	let selectedQueue = 'ranked_solo'; // Default to Ranked Solo
 	let selectedPatch = 'current'; // Current patch
-	let sortBy = 'lpGain'; // Default sort by LP gains
+	let sortBy = 'soloQLP'; // Default sort by total LP
 	let sortDirection = 'desc'; // asc or desc
 
 	// Rank filters
@@ -387,9 +387,9 @@
 									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
 								{/if}
 							</th>
-							<th class="sortable" on:click={() => toggleSort('lpGain')}>
-								LP Gain (7d)
-								{#if sortBy === 'lpGain'}
+							<th class="sortable" on:click={() => toggleSort('soloQLP')}>
+								League Points
+								{#if sortBy === 'soloQLP'}
 									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
 								{/if}
 							</th>
@@ -420,7 +420,7 @@
 									{/if}
 								</td>
 								<td class="winrate">{player.winRate}%</td>
-								<td class="text-green-400 font-bold">+{player.lpGain} LP</td>
+								<td class="text-hex-gold font-bold">{player.soloQLP} LP</td>
 								<td>
 									<div class="flex gap-1">
 										{#each player.topChampions.slice(0, 5) as champKey}

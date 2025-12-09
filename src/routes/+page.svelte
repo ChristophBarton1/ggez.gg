@@ -203,7 +203,7 @@
 <!-- Main UI (fades out in fullscreen) -->
 <div class="transition-opacity duration-1000 {isFullscreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}">
 	<!-- Riot Client Layout -->
-	<div class="min-h-screen flex flex-col">
+	<div class="h-screen overflow-hidden flex flex-col">
 		<!-- Main Content - Riot Layout -->
 		<div class="flex-1 flex flex-col p-4 md:p-4 max-w-[1600px] mx-auto w-full">
 			

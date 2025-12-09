@@ -21,6 +21,10 @@ export async function GET({ url }) {
 
 	const { platform, regional } = REGION_ROUTING[region] || REGION_ROUTING['euw'];
 
+	// Debug: Check if API key is loaded
+	console.log('🔑 API Key loaded:', RIOT_API_KEY ? `${RIOT_API_KEY.substring(0, 15)}...` : 'NOT FOUND');
+	console.log('🌍 Platform:', platform, '| Regional:', regional);
+
 	try {
 		// Fetch Challenger, Grandmaster, and Master players
 		const [challengerRes, grandmasterRes, masterRes] = await Promise.all([
@@ -30,7 +34,12 @@ export async function GET({ url }) {
 		]);
 
 		if (!challengerRes.ok || !grandmasterRes.ok || !masterRes.ok) {
-			throw new Error('Failed to fetch ladder data from Riot API');
+			const errors = [];
+			if (!challengerRes.ok) errors.push(`Challenger: ${challengerRes.status} ${challengerRes.statusText}`);
+			if (!grandmasterRes.ok) errors.push(`Grandmaster: ${grandmasterRes.status} ${grandmasterRes.statusText}`);
+			if (!masterRes.ok) errors.push(`Master: ${masterRes.status} ${masterRes.statusText}`);
+			console.error('❌ Riot API Error:', errors.join(', '));
+			throw new Error(`Failed to fetch ladder data: ${errors.join(', ')}`);
 		}
 
 		const challenger = await challengerRes.json();

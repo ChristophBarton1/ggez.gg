@@ -34,7 +34,7 @@
 </script>
 
 <!-- Top Nav Bar (Riot Style) - Global -->
-<nav class="flex items-center justify-between px-4 md:px-8 py-3 md:py-4 bg-black backdrop-blur-md border-b border-white/10 relative z-40">
+<nav class="fixed top-0 left-0 right-0 flex items-center justify-between px-4 md:px-8 py-3 md:py-4 bg-black backdrop-blur-md border-b border-white/10 z-40">
 	<!-- Logo + Mobile Burger -->
 	<div class="flex items-center gap-3 md:gap-8">
 		<!-- Mobile Burger Menu - ONLY VISIBLE ON MOBILE -->

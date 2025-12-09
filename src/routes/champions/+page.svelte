@@ -182,16 +182,21 @@
 	
 	// Debounced reload when filters change
 	let filterTimeout;
+	let previousFilters = '';
 	$: {
-		if (selectedRank && selectedRole && selectedRegion && selectedQueue && selectedPatch) {
-			if (isInitialized) {
-				// Only reload if already initialized (prevent double load on mount)
-				clearTimeout(filterTimeout);
-				filterTimeout = setTimeout(() => {
-					loadChampions();
-				}, 500); // 500ms debounce for better performance
-			}
+		// Create a key from current filter values
+		const currentFilters = `${selectedRank}-${selectedRole}-${selectedRegion}-${selectedQueue}-${selectedPatch}`;
+		
+		// Only reload if filters actually changed AND we're initialized
+		if (isInitialized && previousFilters && currentFilters !== previousFilters) {
+			clearTimeout(filterTimeout);
+			filterTimeout = setTimeout(() => {
+				loadChampions();
+			}, 500);
 		}
+		
+		// Update previous filters
+		previousFilters = currentFilters;
 	}
 
 	// Search filter and sorting (client-side)

@@ -445,7 +445,7 @@
 		</div>
 
 		<div class="mt-8 text-center text-[#64748b] text-sm font-cinzel">
-			Showing {filteredPlayers.length} of {players.length} Players
+			Top {players.length} Players in {selectedRegion.toUpperCase()}
 		</div>
 	{/if}
 </div>

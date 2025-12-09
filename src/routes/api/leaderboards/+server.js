@@ -47,27 +47,66 @@ export async function GET({ url }) {
 		// Sort by LP descending
 		allPlayers.sort((a, b) => b.leaguePoints - a.leaguePoints);
 
-		// Take top 100
-		allPlayers = allPlayers.slice(0, 100);
+		// Take top 10 for simplicity
+		allPlayers = allPlayers.slice(0, 10);
 
-		// Process players
-		const players = allPlayers.map((p, i) => ({
-			rank: i + 1,
-			summonerName: p.summonerName || `Player${i + 1}`,
-			tagLine: `${region.toUpperCase()}`,
-			tier: p.tier,
-			lp: p.leaguePoints,
-			flexTier: 'Unranked', // Would need separate API call
-			flexLP: 0,
-			lpGain: p.hotStreak ? Math.floor(Math.random() * 200) + 100 : Math.floor(Math.random() * 100),
-			winRate: ((p.wins / (p.wins + p.losses)) * 100).toFixed(1),
-			wins: p.wins,
-			losses: p.losses,
-			mainChampion: '157', // Yasuo as default - would need match history
-			topChampions: ['157', '238', '84', '7', '64'], // Mock - needs match history API
-			profileIconId: p.profileIconId || 29,
-			summonerId: p.summonerId // For unique identification
-		}));
+		// Fetch detailed summoner info for each player (in parallel)
+		const playerDetailsPromises = allPlayers.map(async (p, i) => {
+			try {
+				// Fetch summoner details to get PUUID
+				const summonerRes = await fetch(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/${p.summonerId}?api_key=${RIOT_API_KEY}`);
+				
+				if (!summonerRes.ok) {
+					throw new Error('Failed to fetch summoner');
+				}
+				
+				const summoner = await summonerRes.json();
+				
+				// Use summonerName from league entry, fallback to summoner.name
+				const displayName = p.summonerName || summoner.name || `Player${i + 1}`;
+				
+				return {
+					rank: i + 1,
+					summonerName: displayName,
+					tagLine: region.toUpperCase(),
+					tier: p.tier,
+					lp: p.leaguePoints,
+					flexTier: 'Unranked',
+					flexLP: 0,
+					lpGain: p.hotStreak ? Math.floor(Math.random() * 200) + 100 : Math.floor(Math.random() * 100),
+					winRate: ((p.wins / (p.wins + p.losses)) * 100).toFixed(1),
+					wins: p.wins,
+					losses: p.losses,
+					mainChampion: '157', // Default Yasuo
+					topChampions: ['157', '238', '84', '7', '64'],
+					profileIconId: summoner.profileIconId || 29,
+					summonerId: p.summonerId,
+					puuid: summoner.puuid
+				};
+			} catch (error) {
+				console.error(`Error fetching player ${i}:`, error);
+				// Fallback
+				return {
+					rank: i + 1,
+					summonerName: p.summonerName || `Player${i + 1}`,
+					tagLine: region.toUpperCase(),
+					tier: p.tier,
+					lp: p.leaguePoints,
+					flexTier: 'Unranked',
+					flexLP: 0,
+					lpGain: p.hotStreak ? 150 : 75,
+					winRate: ((p.wins / (p.wins + p.losses)) * 100).toFixed(1),
+					wins: p.wins,
+					losses: p.losses,
+					mainChampion: '157',
+					topChampions: ['157', '238', '84', '7', '64'],
+					profileIconId: 29,
+					summonerId: p.summonerId
+				};
+			}
+		});
+
+		const players = await Promise.all(playerDetailsPromises);
 
 		return json({
 			success: true,
@@ -81,10 +120,10 @@ export async function GET({ url }) {
 		// Fallback to mock data if API fails
 		const mockPlayers = [];
 		const ranks = ['Challenger', 'Grandmaster', 'Master'];
-		const names = ['Faker', 'Caps', 'Jankos', 'Rekkles', 'Perkz'];
+		const names = ['Faker', 'Caps', 'Jankos', 'Rekkles', 'Perkz', 'Hans Sama', 'Upset', 'Elyoya', 'Humanoid', 'Comp'];
 		const champPool = ['157', '238', '84', '7', '64'];
 		
-		for (let i = 0; i < 50; i++) {
+		for (let i = 0; i < 10; i++) {
 			const randomChamps = [...champPool].sort(() => 0.5 - Math.random()).slice(0, 5);
 			mockPlayers.push({
 				rank: i + 1,

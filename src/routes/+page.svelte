@@ -8,6 +8,7 @@
 	let videoElement;
 	let isFullscreen = false;
 	let isPageFullscreen = false;
+	let mobileMenuOpen = false;
 
 	function toggleMute() {
 		if (videoElement) {
@@ -213,8 +214,18 @@
 		
 		<!-- Top Nav Bar (Riot Style) -->
 		<nav class="flex items-center justify-between px-4 md:px-8 py-3 md:py-4 bg-black/40 backdrop-blur-md border-b border-white/10">
-			<!-- Logo -->
+			<!-- Logo + Mobile Burger -->
 			<div class="flex items-center gap-3 md:gap-8">
+				<!-- Mobile Burger Menu -->
+				<button 
+					on:click={() => mobileMenuOpen = !mobileMenuOpen}
+					class="sm:hidden icon-btn"
+					title="Menu">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+					</svg>
+				</button>
+				
 				<a href="/" class="font-cinzel text-lg md:text-2xl text-hex-gold tracking-[2px] hover:text-white transition-colors">
 					GGEZ.GG
 				</a>
@@ -263,6 +274,54 @@
 				</button>
 			</div>
 		</nav>
+
+		<!-- Mobile Menu Overlay -->
+		{#if mobileMenuOpen}
+			<div class="sm:hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-lg">
+				<div class="flex flex-col h-full">
+					<!-- Header -->
+					<div class="flex items-center justify-between p-4 border-b border-white/10">
+						<span class="font-cinzel text-2xl text-hex-gold tracking-[2px]">GGEZ.GG</span>
+						<button 
+							on:click={() => mobileMenuOpen = false}
+							class="icon-btn"
+							title="Close">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					
+					<!-- Menu Items -->
+					<nav class="flex-1 flex flex-col gap-2 p-6">
+						<a href="/" on:click={() => mobileMenuOpen = false} class="mobile-menu-link">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+							</svg>
+							<span>Home</span>
+						</a>
+						<a href="/champions" on:click={() => mobileMenuOpen = false} class="mobile-menu-link">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+							</svg>
+							<span>Champions</span>
+						</a>
+						
+						<div class="border-t border-white/10 my-4"></div>
+						
+						<a href="/impressum" on:click={() => mobileMenuOpen = false} class="mobile-menu-link-small">
+							Impressum
+						</a>
+						<a href="/privacy" on:click={() => mobileMenuOpen = false} class="mobile-menu-link-small">
+							Privacy Policy
+						</a>
+						<a href="/legal" on:click={() => mobileMenuOpen = false} class="mobile-menu-link-small">
+							Legal Notice
+						</a>
+					</nav>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Main Content - Riot Layout -->
 		<div class="flex-1 flex flex-col p-4 md:p-8 max-w-[1600px] mx-auto w-full">
@@ -421,8 +480,6 @@
 		<a href="/privacy" class="hover:text-hex-gold transition-colors">Privacy</a>
 		<span>|</span>
 		<a href="/legal" class="hover:text-hex-gold transition-colors">Legal</a>
-		<span>|</span>
-		<a href="/cookies" class="hover:text-hex-gold transition-colors">Cookies</a>
 	</footer>
 </div>
 
@@ -461,6 +518,38 @@
 	.icon-btn:hover {
 		color: white;
 		background: rgba(255, 255, 255, 0.1);
+	}
+
+	/* Mobile Menu Links */
+	.mobile-menu-link {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem 1.5rem;
+		color: rgba(255, 255, 255, 0.8);
+		font-size: 1.125rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		border-radius: 0.5rem;
+		transition: all 0.2s;
+		background: transparent;
+	}
+	
+	.mobile-menu-link:hover {
+		color: var(--hex-gold);
+		background: rgba(200, 170, 110, 0.1);
+	}
+
+	.mobile-menu-link-small {
+		padding: 0.75rem 1.5rem;
+		color: rgba(255, 255, 255, 0.5);
+		font-size: 0.875rem;
+		transition: all 0.2s;
+	}
+
+	.mobile-menu-link-small:hover {
+		color: var(--hex-gold);
 	}
 
 	/* Video Card Style (Riot Client) */

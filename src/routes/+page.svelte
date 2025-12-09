@@ -216,10 +216,10 @@
 		<nav class="flex items-center justify-between px-4 md:px-8 py-3 md:py-4 bg-black/40 backdrop-blur-md border-b border-white/10">
 			<!-- Logo + Mobile Burger -->
 			<div class="flex items-center gap-3 md:gap-8">
-				<!-- Mobile Burger Menu -->
+				<!-- Mobile Burger Menu - ONLY VISIBLE ON MOBILE -->
 				<button 
 					on:click={() => mobileMenuOpen = !mobileMenuOpen}
-					class="sm:hidden icon-btn"
+					class="md:hidden icon-btn"
 					title="Menu">
 					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -230,8 +230,8 @@
 					GGEZ.GG
 				</a>
 				
-				<!-- Nav Links - Hidden on mobile -->
-				<div class="hidden sm:flex items-center gap-2">
+				<!-- Nav Links - ONLY VISIBLE ON DESKTOP -->
+				<div class="hidden md:flex items-center gap-2">
 					<a href="/" class="nav-link">Home</a>
 					<a href="/champions" class="nav-link">Champions</a>
 				</div>
@@ -275,9 +275,9 @@
 			</div>
 		</nav>
 
-		<!-- Mobile Menu Overlay -->
+		<!-- Mobile Menu Overlay - ONLY ON MOBILE -->
 		{#if mobileMenuOpen}
-			<div class="sm:hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-lg">
+			<div class="md:hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-lg">
 				<div class="flex flex-col h-full">
 					<!-- Header -->
 					<div class="flex items-center justify-between p-4 border-b border-white/10">
@@ -404,12 +404,16 @@
 				<!-- 4 Horizontal Cards (Riot Style with Champion Images) - Mobile Responsive -->
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
 					
-					<!-- Card 1: Champions - Yasuo -->
+					<!-- Card 1: Champions - Yasuo (Optimized) -->
 					<a href="/champions" class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg"
-								alt="Yasuo"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg&w=660&h=390&output=webp&q=80"
+								alt="Yasuo Champion Splash"
+								loading="lazy"
+								decoding="async"
+								width="660"
+								height="390"
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>
@@ -420,12 +424,16 @@
 						</div>
 					</a>
 
-					<!-- Card 2: AI Coach - Zed -->
+					<!-- Card 2: AI Coach - Zed (Optimized) -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg"
-								alt="Zed"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg&w=660&h=390&output=webp&q=80"
+								alt="Zed Champion Splash"
+								loading="lazy"
+								decoding="async"
+								width="660"
+								height="390"
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>
@@ -436,12 +444,16 @@
 						</div>
 					</div>
 
-					<!-- Card 3: Ranked - Akali -->
+					<!-- Card 3: Ranked - Akali (Optimized) -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Akali_0.jpg"
-								alt="Akali"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Akali_0.jpg&w=660&h=390&output=webp&q=80"
+								alt="Akali Champion Splash"
+								loading="lazy"
+								decoding="async"
+								width="660"
+								height="390"
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>
@@ -452,12 +464,16 @@
 						</div>
 					</div>
 
-					<!-- Card 4: Swiftplay - Jinx -->
+					<!-- Card 4: Swiftplay - Jinx (Optimized) -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg"
-								alt="Jinx"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg&w=660&h=390&output=webp&q=80"
+								alt="Jinx Champion Splash"
+								loading="lazy"
+								decoding="async"
+								width="660"
+								height="390"
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>

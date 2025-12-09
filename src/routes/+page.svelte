@@ -203,7 +203,7 @@
 <!-- Main UI (fades out in fullscreen) -->
 <div class="transition-opacity duration-1000 {isFullscreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}">
 	<!-- Riot Client Layout - Account for navbar height -->
-	<div class="overflow-hidden flex flex-col" style="height: 100vh; padding-top: 60px;">
+	<div class="flex flex-col md:overflow-hidden page-container" style="padding-top: 60px;">
 		<!-- Main Content - Riot Layout -->
 		<div class="flex-1 flex flex-col p-4 md:p-4 max-w-[1600px] mx-auto w-full">
 			
@@ -360,6 +360,18 @@
 </div>
 
 <style>
+	/* Page container: scrollable on mobile, fixed height on desktop */
+	.page-container {
+		min-height: 100vh;
+	}
+	
+	@media (min-width: 768px) {
+		.page-container {
+			height: 100vh;
+			min-height: auto;
+		}
+	}
+
 	/* Remove bottom padding on desktop to fit everything */
 	@media (min-width: 768px) {
 		.md\:pb-3 {

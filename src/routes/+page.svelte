@@ -262,7 +262,7 @@
 				</div>
 
 				<!-- 4 Horizontal Cards (Riot Style with Champion Images) - Mobile Responsive -->
-				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
 					
 					<!-- Card 1: Champions - Yasuo (WebP 95%) -->
 					<a href="/champions" class="video-card group">
@@ -360,10 +360,10 @@
 </div>
 
 <style>
-	/* Custom spacing for desktop to push cards higher */
+	/* Remove bottom padding on desktop to fit everything */
 	@media (min-width: 768px) {
 		.md\:pb-3 {
-			padding-bottom: 5rem;
+			padding-bottom: 0.5rem !important;
 		}
 	}
 

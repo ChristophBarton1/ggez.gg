@@ -38,11 +38,7 @@
 		fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap';
 		document.head.appendChild(fontLink);
 		
-		// Track fullscreen changes
-		const handleFullscreenChange = () => {
-			isPageFullscreen = !!document.fullscreenElement;
-		};
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
+		// Fullscreen tracking removed (now in global Navbar)
 		
 		// Preload video
 		const preloadVideo = () => {
@@ -59,7 +55,6 @@
 
 		return () => {
 			clearTimeout(fallback);
-			document.removeEventListener('fullscreenchange', handleFullscreenChange);
 			window.removeEventListener('scroll', preloadVideo);
 			window.removeEventListener('mousemove', preloadVideo);
 			window.removeEventListener('click', preloadVideo);
@@ -263,27 +258,6 @@
 							{/if}
 						</button>
 
-						<!-- Fullscreen Button (Desktop Only) -->
-						<button 
-							on:click={() => {
-								if (document.fullscreenElement) {
-									document.exitFullscreen();
-								} else {
-									document.documentElement.requestFullscreen();
-								}
-							}}
-							class="p-2 md:p-3 bg-white/10 hover:bg-white/20 rounded transition-all text-white"
-							title="{isPageFullscreen ? 'Exit Fullscreen (ESC)' : 'Fullscreen (F11)'}">
-							{#if isPageFullscreen}
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-								</svg>
-							{:else}
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-								</svg>
-							{/if}
-						</button>
 					</div>
 				</div>
 

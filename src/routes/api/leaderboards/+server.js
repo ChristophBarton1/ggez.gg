@@ -1,6 +1,68 @@
 import { json } from '@sveltejs/kit';
 import { RIOT_API_KEY } from '$env/static/private';
 
+// Simple in-memory cache (1 hour TTL)
+let cache = {
+	data: null,
+	timestamp: 0,
+	TTL: 60 * 60 * 1000 // 1 hour in milliseconds
+};
+
+// Helper: Fetch top 5 champions for a player from match history
+async function getTopChampions(puuid, regional, platform, apiKey) {
+	try {
+		// Fetch last 20 ranked solo/duo games
+		const matchListUrl = `https://${regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=20&api_key=${apiKey}`;
+		const matchListRes = await fetch(matchListUrl);
+		
+		if (!matchListRes.ok) {
+			console.warn(`⚠️ Match list failed: ${matchListRes.status}`);
+			return null;
+		}
+		
+		const matchIds = await matchListRes.json();
+		
+		if (!matchIds || matchIds.length === 0) {
+			return null;
+		}
+		
+		// Fetch match details (limit to 10 to avoid rate limiting)
+		const matchPromises = matchIds.slice(0, 10).map(async (matchId) => {
+			try {
+				const matchUrl = `https://${regional}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${apiKey}`;
+				const matchRes = await fetch(matchUrl);
+				if (!matchRes.ok) return null;
+				return await matchRes.json();
+			} catch (e) {
+				return null;
+			}
+		});
+		
+		const matches = (await Promise.all(matchPromises)).filter(m => m !== null);
+		
+		// Count champion frequency
+		const championCounts = {};
+		matches.forEach(match => {
+			const participant = match.info.participants.find(p => p.puuid === puuid);
+			if (participant) {
+				const champId = participant.championId.toString();
+				championCounts[champId] = (championCounts[champId] || 0) + 1;
+			}
+		});
+		
+		// Get top 5 champions sorted by play count
+		const topChampions = Object.entries(championCounts)
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 5)
+			.map(([champId]) => champId);
+		
+		return topChampions.length > 0 ? topChampions : null;
+	} catch (error) {
+		console.error('Error fetching top champions:', error.message);
+		return null;
+	}
+}
+
 const REGION_ROUTING = {
 	'euw': { platform: 'euw1', routing: 'europe', regional: 'europe' },
 	'eune': { platform: 'eun1', routing: 'europe', regional: 'europe' },
@@ -20,6 +82,19 @@ export async function GET({ url }) {
 	const timeframe = url.searchParams.get('timeframe') || '7d';
 
 	const { platform, regional } = REGION_ROUTING[region] || REGION_ROUTING['euw'];
+
+	// Check cache first
+	const now = Date.now();
+	const cacheKey = `${region}-${role}-${timeframe}`;
+	if (cache.data && cache.timestamp > 0 && (now - cache.timestamp) < cache.TTL && cache.data.cacheKey === cacheKey) {
+		const age = Math.floor((now - cache.timestamp) / 1000 / 60); // minutes
+		console.log(`📦 Returning cached data (${age} minutes old)`);
+		return json({
+			...cache.data,
+			cached: true,
+			cacheAge: age
+		});
+	}
 
 	// Debug: Check if API key is loaded
 	console.log('🔑 API Key loaded:', RIOT_API_KEY ? `${RIOT_API_KEY.substring(0, 15)}...` : 'NOT FOUND');
@@ -102,6 +177,26 @@ export async function GET({ url }) {
 					// Profile icon not critical, use default
 				}
 				
+				// 🎮 For TOP 5 players: Fetch real champions from match history!
+				let topChampions = [
+					defaultChampions[i % defaultChampions.length],
+					defaultChampions[(i + 1) % defaultChampions.length],
+					defaultChampions[(i + 2) % defaultChampions.length],
+					defaultChampions[(i + 3) % defaultChampions.length],
+					defaultChampions[(i + 4) % defaultChampions.length]
+				];
+				
+				if (i < 5) {
+					console.log(`🔍 Fetching match history for top ${i + 1} player: ${gameName}...`);
+					const realChampions = await getTopChampions(p.puuid, regional, platform, RIOT_API_KEY);
+					if (realChampions && realChampions.length > 0) {
+						topChampions = realChampions;
+						console.log(`✅ Got real champions for ${gameName}:`, topChampions);
+					} else {
+						console.warn(`⚠️ Could not fetch champions for ${gameName}, using defaults`);
+					}
+				}
+				
 				return {
 					rank: i + 1,
 					summonerName: gameName,
@@ -114,14 +209,8 @@ export async function GET({ url }) {
 					winRate: ((p.wins / (p.wins + p.losses)) * 100).toFixed(1),
 					wins: p.wins,
 					losses: p.losses,
-					mainChampion: defaultChampions[i % defaultChampions.length],
-					topChampions: [
-						defaultChampions[i % defaultChampions.length],
-						defaultChampions[(i + 1) % defaultChampions.length],
-						defaultChampions[(i + 2) % defaultChampions.length],
-						defaultChampions[(i + 3) % defaultChampions.length],
-						defaultChampions[(i + 4) % defaultChampions.length]
-					],
+					mainChampion: topChampions[0],
+					topChampions: topChampions,
 					profileIconId: profileIconId,
 					puuid: p.puuid
 				};
@@ -156,11 +245,20 @@ export async function GET({ url }) {
 
 		const players = await Promise.all(playerDetailsPromises);
 
-		return json({
+		// Prepare response
+		const responseData = {
 			success: true,
 			players,
-			filters: { region, role, timeframe }
-		});
+			filters: { region, role, timeframe },
+			cacheKey: cacheKey
+		};
+
+		// Cache the response
+		cache.data = responseData;
+		cache.timestamp = Date.now();
+		console.log('💾 Data cached for 1 hour');
+
+		return json(responseData);
 
 	} catch (error) {
 		console.error('Error in leaderboards API:', error);

@@ -360,6 +360,13 @@
 </div>
 
 <style>
+	/* Custom spacing for desktop to push cards higher */
+	@media (min-width: 768px) {
+		.md\:pb-3 {
+			padding-bottom: 5rem;
+		}
+	}
+
 	/* Video Card Style (Riot Client) */
 	.video-card {
 		position: relative;

@@ -7,6 +7,7 @@
 	
 	let mobileMenuOpen = false;
 	let isPageFullscreen = false;
+	let loginOverlayOpen = false;
 	
 	onMount(() => {
 		// Track fullscreen state (client-side only)
@@ -67,27 +68,11 @@
 	
 	<!-- Right Icons -->
 	<div class="flex items-center gap-2 md:gap-3">
-		<!-- Notification Bell -->
-		<button class="icon-btn" title="Notifications">
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-			</svg>
-		</button>
-		
-		<!-- Currency -->
-		<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full">
-			<span class="text-yellow-400 text-sm">💰</span>
-			<span class="text-white text-sm font-bold">0</span>
-		</div>
-		
-		<!-- RP -->
-		<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full">
-			<span class="text-hex-gold text-sm">⚡</span>
-			<span class="text-white text-sm font-bold">15</span>
-		</div>
-		
-		<!-- Profile -->
-		<button class="icon-btn" title="Profile">
+		<!-- User/Login Icon -->
+		<button 
+			on:click={() => loginOverlayOpen = !loginOverlayOpen}
+			class="icon-btn" 
+			title="Login">
 			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 			</svg>
@@ -163,6 +148,55 @@
 					Legal Notice
 				</a>
 			</nav>
+		</div>
+	</div>
+{/if}
+
+<!-- Login Overlay -->
+{#if loginOverlayOpen}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+		<div class="bg-hex-darker border border-hex-gold/30 rounded-xl p-8 max-w-md w-full mx-4 relative">
+			<!-- Close Button -->
+			<button 
+				on:click={() => loginOverlayOpen = false}
+				class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
+
+			<!-- Login Form -->
+			<h2 class="font-cinzel text-2xl text-hex-gold mb-6 text-center tracking-wider">LOGIN</h2>
+			
+			<form class="space-y-4">
+				<div>
+					<label class="block text-sm text-gray-400 mb-2">Username</label>
+					<input 
+						type="text" 
+						placeholder="Enter your username"
+						class="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-hex-gold focus:outline-none transition-colors"
+					/>
+				</div>
+				
+				<div>
+					<label class="block text-sm text-gray-400 mb-2">Password</label>
+					<input 
+						type="password" 
+						placeholder="Enter your password"
+						class="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-hex-gold focus:outline-none transition-colors"
+					/>
+				</div>
+
+				<button 
+					type="submit"
+					class="w-full py-3 bg-hex-gold text-black font-bold rounded-lg hover:bg-white transition-all mt-6">
+					LOGIN
+				</button>
+			</form>
+
+			<div class="text-center mt-4 text-sm text-gray-500">
+				Don't have an account? <button class="text-hex-gold hover:text-white transition-colors">Sign up</button>
+			</div>
 		</div>
 	</div>
 {/if}

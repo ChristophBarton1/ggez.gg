@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="#0a0f14" stroke="#c8aa6e" stroke-width="2"/>
+  
+  <!-- GG Text in Gold -->
+  <text x="50" y="68" font-family="'Cinzel', serif" font-size="42" font-weight="700" fill="#c8aa6e" text-anchor="middle">GG</text>
+  
+  <!-- Decorative Elements - Corner Brackets -->
+  <path d="M 20 25 L 15 25 L 15 30" stroke="#c8aa6e" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <path d="M 80 25 L 85 25 L 85 30" stroke="#c8aa6e" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <path d="M 20 75 L 15 75 L 15 70" stroke="#c8aa6e" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <path d="M 80 75 L 85 75 L 85 70" stroke="#c8aa6e" stroke-width="1.5" fill="none" opacity="0.6"/>
+  
+  <!-- Small dots for detail -->
+  <circle cx="50" cy="20" r="1.5" fill="#0bc5ea" opacity="0.8"/>
+  <circle cx="50" cy="80" r="1.5" fill="#0bc5ea" opacity="0.8"/>
+</svg>

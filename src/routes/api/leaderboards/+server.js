@@ -26,31 +26,29 @@ export async function GET({ url }) {
 	console.log('🌍 Platform:', platform, '| Regional:', regional);
 
 	try {
-		// Fetch Challenger, Grandmaster, and Master players
-		const [challengerRes, grandmasterRes, masterRes] = await Promise.all([
+		// Fetch Challenger and Grandmaster players (Master is too slow/large)
+		const [challengerRes, grandmasterRes] = await Promise.all([
 			fetch(`https://${platform}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=${RIOT_API_KEY}`),
-			fetch(`https://${platform}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5?api_key=${RIOT_API_KEY}`),
-			fetch(`https://${platform}.api.riotgames.com/lol/league/v4/masterleagues/by-queue/RANKED_SOLO_5x5?api_key=${RIOT_API_KEY}`)
+			fetch(`https://${platform}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5?api_key=${RIOT_API_KEY}`)
 		]);
 
-		if (!challengerRes.ok || !grandmasterRes.ok || !masterRes.ok) {
+		if (!challengerRes.ok || !grandmasterRes.ok) {
 			const errors = [];
 			if (!challengerRes.ok) errors.push(`Challenger: ${challengerRes.status} ${challengerRes.statusText}`);
 			if (!grandmasterRes.ok) errors.push(`Grandmaster: ${grandmasterRes.status} ${grandmasterRes.statusText}`);
-			if (!masterRes.ok) errors.push(`Master: ${masterRes.status} ${masterRes.statusText}`);
 			console.error('❌ Riot API Error:', errors.join(', '));
 			throw new Error(`Failed to fetch ladder data: ${errors.join(', ')}`);
 		}
 
 		const challenger = await challengerRes.json();
 		const grandmaster = await grandmasterRes.json();
-		const master = await masterRes.json();
+		
+		console.log(`✅ Fetched ${challenger.entries.length} Challenger + ${grandmaster.entries.length} Grandmaster players`);
 
 		// Combine all players
 		let allPlayers = [
 			...challenger.entries.map(e => ({ ...e, tier: 'Challenger' })),
-			...grandmaster.entries.map(e => ({ ...e, tier: 'Grandmaster' })),
-			...master.entries.slice(0, 100).map(e => ({ ...e, tier: 'Master' })) // Limit Master to top 100
+			...grandmaster.entries.map(e => ({ ...e, tier: 'Grandmaster' }))
 		];
 
 		// Sort by LP descending

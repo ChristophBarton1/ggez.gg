@@ -404,11 +404,11 @@
 				<!-- 4 Horizontal Cards (Riot Style with Champion Images) - Mobile Responsive -->
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
 					
-					<!-- Card 1: Champions - Yasuo (Optimized) -->
+					<!-- Card 1: Champions - Yasuo (WebP 95%) -->
 					<a href="/champions" class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg&w=660&h=390&output=webp&q=80"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Yasuo_0.jpg&w=660&h=390&output=webp&q=95"
 								alt="Yasuo Champion Splash"
 								loading="lazy"
 								decoding="async"
@@ -424,11 +424,11 @@
 						</div>
 					</a>
 
-					<!-- Card 2: AI Coach - Zed (Optimized) -->
+					<!-- Card 2: AI Coach - Zed (WebP 95%) -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg&w=660&h=390&output=webp&q=80"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_0.jpg&w=660&h=390&output=webp&q=95"
 								alt="Zed Champion Splash"
 								loading="lazy"
 								decoding="async"
@@ -444,11 +444,11 @@
 						</div>
 					</div>
 
-					<!-- Card 3: Ranked - Akali (Optimized) -->
+					<!-- Card 3: Ranked - Akali (WebP 95%) -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Akali_0.jpg&w=660&h=390&output=webp&q=80"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Akali_0.jpg&w=660&h=390&output=webp&q=95"
 								alt="Akali Champion Splash"
 								loading="lazy"
 								decoding="async"
@@ -464,11 +464,11 @@
 						</div>
 					</div>
 
-					<!-- Card 4: Swiftplay - Jinx (Optimized) -->
+					<!-- Card 4: Swiftplay - Jinx (WebP 95%) -->
 					<div class="video-card group">
 						<div class="video-card-thumb">
 							<img 
-								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg&w=660&h=390&output=webp&q=80"
+								src="https://wsrv.nl/?url=ddragon.leagueoflegends.com/cdn/img/champion/splash/Jinx_0.jpg&w=660&h=390&output=webp&q=95"
 								alt="Jinx Champion Splash"
 								loading="lazy"
 								decoding="async"
@@ -489,8 +489,8 @@
 		</div>
 	</div>
 
-	<!-- Footer Links (Legal) -->
-	<footer class="fixed bottom-4 left-4 z-30 flex items-center gap-3 text-xs text-gray-500">
+	<!-- Footer Links (Legal) - Fixed only on Desktop -->
+	<footer class="md:fixed bottom-4 left-4 z-30 flex items-center justify-center gap-3 text-xs text-gray-500 pb-4 md:pb-0">
 		<a href="/impressum" class="hover:text-hex-gold transition-colors">Impressum</a>
 		<span>|</span>
 		<a href="/privacy" class="hover:text-hex-gold transition-colors">Privacy</a>

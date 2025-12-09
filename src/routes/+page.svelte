@@ -205,31 +205,31 @@
 	<!-- Riot Client Layout -->
 	<div class="min-h-screen flex flex-col">
 		<!-- Main Content - Riot Layout -->
-		<div class="flex-1 flex flex-col p-4 md:p-8 max-w-[1600px] mx-auto w-full">
+		<div class="flex-1 flex flex-col p-4 md:p-6 max-w-[1600px] mx-auto w-full">
 			
-			<!-- Top: Title + Search Bar (Better Centered) -->
-			<div class="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto w-full px-4">
+			<!-- Top: Title + Search Bar (Compact) -->
+			<div class="flex flex-col items-center justify-center max-w-4xl mx-auto w-full px-4 pt-8 md:pt-12">
 				<!-- Brand Title -->
-				<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-3 md:mb-4 tracking-[3px] md:tracking-[5px] uppercase text-hex-gold text-center"
+				<h1 class="font-cinzel text-4xl sm:text-5xl md:text-6xl mb-3 tracking-[3px] md:tracking-[5px] uppercase text-hex-gold text-center"
 				    style="text-shadow: 0 10px 30px rgba(0,0,0,0.5);">
 					GGEZ.GG
 				</h1>
 				
 				<!-- Subtitle -->
-				<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-4 md:mb-8 tracking-[1px] md:tracking-[2px] uppercase text-center">
+				<div class="text-sm sm:text-base md:text-lg text-hex-blue mb-4 md:mb-6 tracking-[1px] md:tracking-[2px] uppercase text-center">
 					Lightning-Fast Summoner Analytics
 				</div>
 				
 				<!-- Search Bar -->
-				<div class="w-full max-w-2xl mb-12 md:mb-0">
+				<div class="w-full max-w-2xl mb-8 md:mb-12">
 					<SummonerSearch />
 				</div>
 			</div>
 
 			<!-- Bottom Section: Trailer + Cards -->
-			<div class="mt-auto pb-4 md:pb-8">
+			<div class="mt-auto pb-4 md:pb-6">
 				<!-- Trailer Info (LEFT BOTTOM) - Hidden on Mobile -->
-				<div class="hidden md:block mb-6 md:mb-8 max-w-xl">
+				<div class="hidden md:block mb-4 md:mb-6 max-w-xl">
 					<h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">Season 2025: Summoner's Destiny</h2>
 					<p class="text-gray-300 mb-4 md:mb-6 leading-relaxed text-xs sm:text-sm">
 						Centuries ago, Zaahen made a choice. Now, Xin Zhao must make his own.

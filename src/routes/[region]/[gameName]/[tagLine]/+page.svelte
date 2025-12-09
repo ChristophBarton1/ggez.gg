@@ -380,31 +380,7 @@
 <div class="hero-bg" style="background-image: url('{currentBgImage}');"></div>
 <div class="overlay"></div>
 
-<!-- Navigation -->
-<nav class="sticky top-0 z-50 flex flex-col sm:grid sm:grid-cols-[150px_1fr_150px] md:grid-cols-[200px_1fr_200px] items-center gap-3 sm:gap-0 px-4 sm:px-6 md:px-10 py-3 sm:py-5 backdrop-blur-xl border-b border-hex-gold/30 bg-hex-darker/95">
-	<div class="flex items-center gap-2">
-		<a href="/" class="font-cinzel text-xl sm:text-2xl text-hex-gold tracking-[1px] sm:tracking-[2px] no-underline hover:text-white transition-colors">
-			GGEZ.GG
-		</a>
-		{#if refreshing}
-			<div class="flex items-center gap-1 text-hex-blue text-xs animate-pulse">
-				<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-				</svg>
-				<span class="hidden sm:inline">Refreshing...</span>
-			</div>
-		{/if}
-	</div>
-	<div class="flex justify-center w-full order-3 sm:order-none">
-		<div class="w-full max-w-2xl">
-			<SummonerSearch showRegionSelector={true} />
-		</div>
-	</div>
-	<button class="hidden sm:flex justify-self-end bg-transparent border border-hex-gold text-hex-gold px-4 md:px-8 py-2 font-cinzel cursor-pointer rounded-lg transition-all duration-300 hover:bg-hex-gold hover:text-black text-sm md:text-base">
-		LOGIN
-	</button>
-</nav>
+<!-- Navigation removed - now using global Navbar from layout -->
 
 {#if loading}
 	<!-- ⚡ INSTANT SKELETON LOADER - Appears immediately for perceived speed -->

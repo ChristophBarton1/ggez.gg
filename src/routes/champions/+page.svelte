@@ -253,15 +253,7 @@
 	<div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:40px_40px]"></div>
 </div>
 
-<!-- Navigation -->
-<nav class="sticky top-0 z-50 px-6 py-4 flex items-center justify-between bg-[#050508]/80 backdrop-blur-lg border-b border-white/5">
-	<a href="/" class="font-cinzel text-2xl text-hex-gold tracking-[3px] hover:text-white transition-colors no-underline">
-		GGEZ.GG
-	</a>
-	<div class="text-xs text-[#0acbe6] font-cinzel tracking-widest uppercase hidden sm:block">
-		Meta Hub
-	</div>
-</nav>
+<!-- Navigation removed - now using global Navbar from layout -->
 
 <div class="max-w-[1400px] mx-auto px-5 py-10">
 

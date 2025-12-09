@@ -490,16 +490,22 @@
 		grid-template-columns: 2fr 1fr 1fr;
 		gap: 20px;
 		margin-bottom: 60px;
-		height: 350px;
 	}
 
 	@media (max-width: 768px) {
 		.spotlight-grid {
 			grid-template-columns: 1fr;
-			height: auto;
 		}
-		.spotlight-hero { height: 300px; }
-		.spotlight-col { flex-direction: row; height: 150px; }
+		.spotlight-hero { 
+			aspect-ratio: 16/9;
+		}
+		.spotlight-col { 
+			flex-direction: column;
+			gap: 20px;
+		}
+		.spotlight-mini {
+			aspect-ratio: 16/9;
+		}
 	}
 
 	.spotlight-card {
@@ -516,14 +522,27 @@
 		box-shadow: 0 0 30px rgba(10, 203, 230, 0.1);
 	}
 	
+	/* ⚡ Prevent layout shift - fixed aspect ratio */
+	.spotlight-hero {
+		aspect-ratio: 16/9;
+		background: linear-gradient(135deg, #1a1b23 0%, #0f1118 100%);
+	}
+	
+	.spotlight-mini {
+		aspect-ratio: 16/9;
+		background: linear-gradient(135deg, #1a1b23 0%, #0f1118 100%);
+	}
+	
 	/* ⚡ Smooth image loading - no flicker! */
 	.spotlight-hero img {
 		animation: fadeInImage 0.5s ease-in-out;
 		will-change: opacity;
+		min-height: 100%;
 	}
 	
 	.spotlight-mini img {
 		animation: fadeInImageSoft 0.4s ease-in-out;
+		min-height: 100%;
 	}
 	
 	@keyframes fadeInImage {
@@ -581,7 +600,6 @@
 	}
 
 	.spotlight-mini {
-		flex: 1;
 		position: relative;
 	}
 

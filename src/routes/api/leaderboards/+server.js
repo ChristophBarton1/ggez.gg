@@ -50,6 +50,9 @@ export async function GET({ url }) {
 		// Take top 10 for simplicity
 		allPlayers = allPlayers.slice(0, 10);
 
+		// Different default champions for variety in spotlight
+		const defaultChampions = ['157', '238', '84', '777', '141', '555', '11', '64', '103', '245'];
+		
 		// Fetch detailed summoner info for each player (in parallel)
 		const playerDetailsPromises = allPlayers.map(async (p, i) => {
 			try {
@@ -90,8 +93,14 @@ export async function GET({ url }) {
 					winRate: ((p.wins / (p.wins + p.losses)) * 100).toFixed(1),
 					wins: p.wins,
 					losses: p.losses,
-					mainChampion: '157', // Default Yasuo
-					topChampions: ['157', '238', '84', '7', '64'],
+					mainChampion: defaultChampions[i % defaultChampions.length],
+					topChampions: [
+						defaultChampions[i % defaultChampions.length],
+						defaultChampions[(i + 1) % defaultChampions.length],
+						defaultChampions[(i + 2) % defaultChampions.length],
+						defaultChampions[(i + 3) % defaultChampions.length],
+						defaultChampions[(i + 4) % defaultChampions.length]
+					],
 					profileIconId: summoner.profileIconId || 29,
 					summonerId: p.summonerId,
 					puuid: summoner.puuid
@@ -111,8 +120,14 @@ export async function GET({ url }) {
 					winRate: ((p.wins / (p.wins + p.losses)) * 100).toFixed(1),
 					wins: p.wins,
 					losses: p.losses,
-					mainChampion: '157',
-					topChampions: ['157', '238', '84', '7', '64'],
+					mainChampion: defaultChampions[i % defaultChampions.length],
+					topChampions: [
+						defaultChampions[i % defaultChampions.length],
+						defaultChampions[(i + 1) % defaultChampions.length],
+						defaultChampions[(i + 2) % defaultChampions.length],
+						defaultChampions[(i + 3) % defaultChampions.length],
+						defaultChampions[(i + 4) % defaultChampions.length]
+					],
 					profileIconId: 29,
 					summonerId: p.summonerId
 				};
@@ -134,10 +149,9 @@ export async function GET({ url }) {
 		const mockPlayers = [];
 		const ranks = ['Challenger', 'Grandmaster', 'Master'];
 		const names = ['Faker', 'Caps', 'Jankos', 'Rekkles', 'Perkz', 'Hans Sama', 'Upset', 'Elyoya', 'Humanoid', 'Comp'];
-		const champPool = ['157', '238', '84', '7', '64'];
+		const defaultChampions = ['157', '238', '84', '777', '141', '555', '11', '64', '103', '245'];
 		
 		for (let i = 0; i < 10; i++) {
-			const randomChamps = [...champPool].sort(() => 0.5 - Math.random()).slice(0, 5);
 			mockPlayers.push({
 				rank: i + 1,
 				summonerName: i < 5 ? names[i] : `Player${i + 1}`,
@@ -149,9 +163,15 @@ export async function GET({ url }) {
 				lpGain: Math.floor(Math.random() * 200),
 				winRate: (55 + (Math.random() * 15)).toFixed(1),
 				wins: Math.floor(100 + Math.random() * 400),
-				losses: Math.floor(80 + Math.random() * 300),
-				mainChampion: randomChamps[0],
-				topChampions: randomChamps,
+				losses: Math.floor(50 + Math.random() * 200),
+				mainChampion: defaultChampions[i % defaultChampions.length],
+				topChampions: [
+					defaultChampions[i % defaultChampions.length],
+					defaultChampions[(i + 1) % defaultChampions.length],
+					defaultChampions[(i + 2) % defaultChampions.length],
+					defaultChampions[(i + 3) % defaultChampions.length],
+					defaultChampions[(i + 4) % defaultChampions.length]
+				],
 				profileIconId: 29
 			});
 		}

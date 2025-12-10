@@ -277,7 +277,7 @@
 								class="video-thumbnail-img"
 							/>
 							<div class="video-thumbnail-overlay"></div>
-							<span class="video-badge time">2:45</span>
+							<span class="video-badge live">NEW</span>
 						</div>
 						<div class="video-card-title">
 							Champions: 2025 Meta Picks
@@ -403,15 +403,6 @@
 		overflow: hidden;
 	}
 
-	.video-thumbnail-placeholder {
-		width: 100%;
-		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: linear-gradient(135deg, rgba(200, 170, 110, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
-	}
-
 	.video-thumbnail-img {
 		width: 100%;
 		height: 100%;
@@ -440,14 +431,20 @@
 		color: white;
 	}
 
-	.video-badge.dev {
-		background: rgba(0, 0, 0, 0.9);
-		color: white;
+	.video-badge.live {
+		background: rgba(200, 170, 110, 0.9);
+		color: #000;
+		animation: pulse 2s ease-in-out infinite;
 	}
 
 	.video-badge.time {
 		background: rgba(0, 0, 0, 0.8);
 		color: white;
+	}
+	
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.7; }
 	}
 
 	.video-card-title {

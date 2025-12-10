@@ -90,6 +90,7 @@
 		loadPromise = (async () => {
 			try {
 				loading = true;
+				console.log('🔄 Loading champions with filters:', { queue: selectedQueue, patch: selectedPatch, region: selectedRegion, rank: selectedRank, role: selectedRole });
 				
 				// Only fetch version once
 				if (!latestVersion) {

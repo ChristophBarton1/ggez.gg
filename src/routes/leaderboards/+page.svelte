@@ -435,43 +435,26 @@
 								<td class="winrate">{player.winRate}%</td>
 								<td class="text-hex-gold font-bold">{player.soloQLP} LP</td>
 								<td>
-									<!-- For Top 3: Show champions directly (real data from match history) -->
-									{#if player.rank <= 3}
-										<div class="flex gap-1 items-center">
-											{#each player.topChampions.slice(0, 5) as champKey}
-												{#if championNames[champKey]}
-													<img 
-														src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${championNames[champKey].id}.png`, { width: 32 })}
-														alt={championNames[champKey].name}
-														title={championNames[champKey].name}
-														width="32"
-														height="32"
-														class="rounded"
-													/>
-												{/if}
-											{/each}
-											<span class="text-xs text-green-400 ml-2">✓ Real</span>
-										</div>
-									{:else}
-										<!-- For others (4-10): Expandable button -->
-										<button 
-											on:click={() => toggleRow(playerKey)}
-											class="expand-btn"
-											aria-expanded={isExpanded}
-										>
-											<span class="mr-2">View Champions</span>
-											<span class="arrow" class:expanded={isExpanded}>▶</span>
-										</button>
-									{/if}
+									<!-- All players in table: Expandable button -->
+									<button 
+										on:click={() => toggleRow(playerKey)}
+										class="expand-btn"
+										aria-expanded={isExpanded}
+									>
+										<span class="mr-2">View Champions</span>
+										<span class="arrow" class:expanded={isExpanded}>▶</span>
+									</button>
 								</td>
 							</tr>
 							
-							<!-- Expanded row showing champions -->
-							{#if player.rank > 3 && isExpanded}
+							<!-- Expanded row showing champions (for ALL players) -->
+							{#if isExpanded}
 								<tr class="expanded-row" transition:fade={{ duration: 200 }}>
 									<td colspan="7" style="padding: 1rem 2rem; background: rgba(10, 203, 230, 0.05);">
 										<div class="flex gap-3 items-center">
-											<span class="text-sm text-gray-400 font-semibold">Most Played Champions:</span>
+											<span class="text-sm text-gray-400 font-semibold">
+												{player.rank <= 3 ? '✅ Real Match History:' : 'Most Played Champions:'}
+											</span>
 											{#each player.topChampions.slice(0, 5) as champKey}
 												{#if championNames[champKey]}
 													<div class="flex flex-col items-center gap-1">

@@ -9,33 +9,15 @@
 	let loading = true;
 	let isInitialized = false; // Prevent loading screen flicker on first load
 	let searchQuery = '';
-	let selectedRole = 'all';
-	let selectedRank = 'platinum_plus';
 	let selectedRegion = 'euw'; // Default to EUW
-	let selectedQueue = 'ranked_solo'; // Default to Ranked Solo
-	let selectedPatch = 'current'; // Current patch
 	let sortBy = 'soloQLP'; // Default sort by total LP
 	let sortDirection = 'desc'; // asc or desc
 	let expandedRows = new Set(); // Track which rows are expanded
 	let loadingChampions = new Set(); // Track which rows are loading champions
 	let loadedChampions = new Map(); // Store loaded champion data
-
-	// Rank filters
-	const ranks = [
-		{ value: 'platinum_plus', label: 'Platinum+', icon: '💎' },
-		{ value: 'diamond_plus', label: 'Diamond+', icon: '💠' },
-		{ value: 'iron', label: 'Iron', icon: '🪨' },
-		{ value: 'bronze', label: 'Bronze', icon: '🥉' },
-		{ value: 'silver', label: 'Silver', icon: '🥈' },
-		{ value: 'gold', label: 'Gold', icon: '🥇' },
-		{ value: 'platinum', label: 'Platinum', icon: '💎' },
-		{ value: 'diamond', label: 'Diamond', icon: '💠' },
-		{ value: 'master', label: 'Master+', icon: '👑' }
-	];
 	
 	// Region filters
 	const regions = [
-		{ value: 'all', label: 'All Regions', icon: '🌍' },
 		{ value: 'euw', label: 'EUW', icon: '🇪🇺' },
 		{ value: 'na', label: 'NA', icon: '🇺🇸' },
 		{ value: 'kr', label: 'KR', icon: '🇰🇷' },
@@ -46,33 +28,6 @@
 		{ value: 'oce', label: 'OCE', icon: '🇦🇺' },
 		{ value: 'jp', label: 'JP', icon: '🇯🇵' },
 		{ value: 'tr', label: 'TR', icon: '🇹🇷' }
-	];
-	
-	// Queue Type filters
-	const queueTypes = [
-		{ value: 'ranked_solo', label: 'Ranked Solo/Duo', icon: '🏆' },
-		{ value: 'ranked_flex', label: 'Ranked Flex', icon: '👥' },
-		{ value: 'normal', label: 'Normal (Draft)', icon: '🎮' },
-		{ value: 'aram', label: 'ARAM', icon: '❄️' },
-		{ value: 'all', label: 'All Queues', icon: '🌐' }
-	];
-	
-	// Patch filters (current + last 3 patches)
-	const patches = [
-		{ value: 'current', label: 'Patch 14.24', icon: '🆕' },
-		{ value: '14.23', label: 'Patch 14.23', icon: '📊' },
-		{ value: '14.22', label: 'Patch 14.22', icon: '📊' },
-		{ value: '14.21', label: 'Patch 14.21', icon: '📊' }
-	];
-
-	// Role filters (matching LoLalytics lanes)
-	const roles = [
-		{ value: 'all', label: 'All Roles', icon: '🌐' },
-		{ value: 'top', label: 'Top', icon: '⬆️' },
-		{ value: 'jungle', label: 'Jungle', icon: '🌲' },
-		{ value: 'mid', label: 'Mid', icon: '⭐' },
-		{ value: 'adc', label: 'ADC', icon: '🎯' },
-		{ value: 'support', label: 'Support', icon: '🛡️' }
 	];
 
 	let latestVersion = '';
@@ -108,8 +63,8 @@
 					});
 				}
 				
-				// Fetch players from API
-				const res = await fetch(`/api/leaderboards?region=${selectedRegion}&role=${selectedRole}&timeframe=${selectedPatch}`);
+				// Fetch players from API (only region is supported)
+				const res = await fetch(`/api/leaderboards?region=${selectedRegion}`);
 				const data = await res.json();
 				
 				if (!data.success) throw new Error('Failed to fetch leaderboard');
@@ -161,16 +116,20 @@
 		return loadPromise;
 	}
 	
-	// Debounced reload when filters change
+	// Debounced reload when region changes
 	let filterTimeout;
-	let previousFilters = '';
+	let previousRegion = '';
 	$: {
-		const currentFilters = `${selectedRole}-${selectedRegion}-${selectedPatch}`;
-		if (isInitialized && previousFilters && currentFilters !== previousFilters) {
+		if (isInitialized && previousRegion && selectedRegion !== previousRegion) {
 			clearTimeout(filterTimeout);
-			filterTimeout = setTimeout(() => loadPlayers(), 500);
+			filterTimeout = setTimeout(() => {
+				// Clear loaded champions cache when changing regions
+				loadedChampions = new Map();
+				expandedRows = new Set();
+				loadPlayers();
+			}, 500);
 		}
-		previousFilters = currentFilters;
+		previousRegion = selectedRegion;
 	}
 
 	// Toggle row expansion and load champions on-demand
@@ -233,16 +192,6 @@
 		}
 	}
 
-	function getTierClass(tier) {
-		if (tier === 'S+' || tier === 'S') return 'tier-s';
-		if (tier === 'A+' || tier === 'A') return 'tier-a';
-		return 'tier-b';
-	}
-	
-	function getRoleLabel(role) {
-		const roleMap = { top: 'Top', jungle: 'Jungle', mid: 'Mid', adc: 'ADC', support: 'Support' };
-		return roleMap[role] || role;
-	}
 </script>
 
 <svelte:head>
@@ -341,60 +290,29 @@
 		<div class="data-panel">
 			<!-- Controls -->
 			<div class="panel-controls">
-				<!-- Rank Filter -->
-				<div class="filter-group">
-					<label class="filter-label" for="rank-select">Rank:</label>
-					<select id="rank-select" bind:value={selectedRank} class="rank-select">
-						{#each ranks as rank}
-							<option value={rank.value}>{rank.icon} {rank.label}</option>
-						{/each}
-					</select>
+				<!-- Info Badge -->
+				<div class="info-badge">
+					<span class="text-[#c8aa6e]">👑</span> Challenger & Grandmaster Only
 				</div>
 				
 				<!-- Region Filter -->
 				<div class="filter-group">
 					<label class="filter-label" for="region-select">Region:</label>
 					<select id="region-select" bind:value={selectedRegion} class="rank-select">
-						{#each regions as region}
+						{#each regions.filter(r => r.value !== 'all') as region}
 							<option value={region.value}>{region.icon} {region.label}</option>
 						{/each}
 					</select>
 				</div>
 				
-				<!-- Queue Type Filter -->
-				<div class="filter-group">
-					<label class="filter-label" for="queue-select">Queue:</label>
-					<select id="queue-select" bind:value={selectedQueue} class="rank-select">
-						{#each queueTypes as queue}
-							<option value={queue.value}>{queue.icon} {queue.label}</option>
-						{/each}
-					</select>
+				<!-- Queue Type Badge (not filterable) -->
+				<div class="info-badge">
+					🏆 Ranked Solo/Duo
 				</div>
-				
-				<!-- Patch Filter -->
-				<div class="filter-group">
-					<label class="filter-label" for="patch-select">Patch:</label>
-					<select id="patch-select" bind:value={selectedPatch} class="rank-select">
-						{#each patches as patch}
-							<option value={patch.value}>{patch.icon} {patch.label}</option>
-						{/each}
-					</select>
-				</div>
-				
-				<!-- Role Filters -->
-				{#each roles as role}
-					<button 
-						class="filter-btn {selectedRole === role.value ? 'active' : ''}" 
-						on:click={() => selectedRole = role.value}
-					>
-						<span class="role-icon">{role.icon}</span>
-						{role.label}
-					</button>
-				{/each}
 				
 				<input 
 					type="text" 
-					placeholder="🔍 Search champion..." 
+					placeholder="🔍 Search summoner..." 
 					bind:value={searchQuery}
 					class="search-input"
 				>
@@ -674,26 +592,18 @@
 		color: white;
 	}
 
-	.filter-btn {
-		background: transparent;
-		border: 1px solid rgba(255,255,255,0.05);
-		color: #64748b;
+	.info-badge {
+		background: rgba(200, 170, 110, 0.1);
+		border: 1px solid rgba(200, 170, 110, 0.3);
+		color: #c8aa6e;
 		padding: 8px 16px;
 		border-radius: 6px;
-		cursor: pointer;
-		transition: 0.2s;
+		font-size: 0.9rem;
 		display: flex;
 		align-items: center;
-		gap: 6px;
-	}
-	.filter-btn.active, .filter-btn:hover {
-		background: rgba(10, 203, 230, 0.1);
-		color: #0acbe6;
-		border-color: #0acbe6;
-	}
-	
-	.role-icon {
-		font-size: 1rem;
+		gap: 8px;
+		font-weight: 600;
+		white-space: nowrap;
 	}
 
 	.search-input {

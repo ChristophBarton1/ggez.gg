@@ -17,6 +17,8 @@
 	let sortBy = 'soloQLP'; // Default sort by total LP
 	let sortDirection = 'desc'; // asc or desc
 	let expandedRows = new Set(); // Track which rows are expanded
+	let loadingChampions = new Set(); // Track which rows are loading champions
+	let loadedChampions = new Map(); // Store loaded champion data
 
 	// Rank filters
 	const ranks = [
@@ -171,13 +173,38 @@
 		previousFilters = currentFilters;
 	}
 
-	// Toggle row expansion
-	function toggleRow(playerKey) {
+	// Toggle row expansion and load champions on-demand
+	async function toggleRow(playerKey, player) {
 		expandedRows = new Set(expandedRows);
+		
 		if (expandedRows.has(playerKey)) {
+			// Collapse
 			expandedRows.delete(playerKey);
 		} else {
+			// Expand
 			expandedRows.add(playerKey);
+			
+			// Load champions if not already loaded
+			if (!loadedChampions.has(player.puuid)) {
+				loadingChampions = new Set(loadingChampions).add(playerKey);
+				
+				try {
+					const res = await fetch(`/api/leaderboards/champions?puuid=${player.puuid}&region=${selectedRegion}`);
+					const data = await res.json();
+					
+					if (data.success && data.champions) {
+						loadedChampions = new Map(loadedChampions).set(player.puuid, data.champions);
+						console.log(`✅ Loaded champions for ${player.summonerName}:`, data.champions);
+					} else {
+						console.warn(`⚠️ Could not load champions for ${player.summonerName}`);
+					}
+				} catch (error) {
+					console.error('Error loading champions:', error);
+				} finally {
+					loadingChampions = new Set(loadingChampions);
+					loadingChampions.delete(playerKey);
+				}
+			}
 		}
 	}
 
@@ -437,25 +464,33 @@
 								<td>
 									<!-- All players in table: Expandable button -->
 									<button 
-										on:click={() => toggleRow(playerKey)}
+										on:click={() => toggleRow(playerKey, player)}
 										class="expand-btn"
 										aria-expanded={isExpanded}
+										disabled={loadingChampions.has(playerKey)}
 									>
-										<span class="mr-2">View Champions</span>
-										<span class="arrow" class:expanded={isExpanded}>▶</span>
+										{#if loadingChampions.has(playerKey)}
+											<span class="mr-2">Loading...</span>
+											<span class="loading-spinner">⏳</span>
+										{:else}
+											<span class="mr-2">View Champions</span>
+											<span class="arrow" class:expanded={isExpanded}>▶</span>
+										{/if}
 									</button>
 								</td>
 							</tr>
 							
 							<!-- Expanded row showing champions (for ALL players) -->
 							{#if isExpanded}
+								{@const championsToShow = loadedChampions.get(player.puuid) || player.topChampions}
+								{@const isRealData = loadedChampions.has(player.puuid)}
 								<tr class="expanded-row" transition:fade={{ duration: 200 }}>
 									<td colspan="7" style="padding: 1rem 2rem; background: rgba(10, 203, 230, 0.05);">
 										<div class="flex gap-3 items-center">
 											<span class="text-sm text-gray-400 font-semibold">
-												{player.rank <= 3 ? '✅ Real Match History:' : 'Most Played Champions:'}
+												{isRealData ? '✅ Real Match History:' : 'Most Played Champions:'}
 											</span>
-											{#each player.topChampions.slice(0, 5) as champKey}
+											{#each championsToShow.slice(0, 5) as champKey}
 												{#if championNames[champKey]}
 													<div class="flex flex-col items-center gap-1">
 														<img 
@@ -777,10 +812,14 @@
 		justify-content: center;
 		font-weight: 600;
 	}
-	.expand-btn:hover {
+	.expand-btn:hover:not(:disabled) {
 		background: rgba(10, 203, 230, 0.2);
 		border-color: #0acbe6;
 		transform: translateY(-1px);
+	}
+	.expand-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 	.expand-btn .arrow {
 		display: inline-block;
@@ -789,6 +828,14 @@
 	}
 	.expand-btn .arrow.expanded {
 		transform: rotate(90deg);
+	}
+	.expand-btn .loading-spinner {
+		display: inline-block;
+		animation: spin 1s linear infinite;
+	}
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
 	}
 
 	.expanded-row {

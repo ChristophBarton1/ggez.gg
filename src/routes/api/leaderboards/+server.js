@@ -9,65 +9,6 @@ let cache = {
 	TTL: 60 * 60 * 1000 // 1 hour in milliseconds
 };
 
-// Helper: Fetch top 5 champions for a player from match history
-async function getTopChampions(puuid, regional, platform, apiKey) {
-	try {
-		// Add delay before fetching to respect rate limits
-		await new Promise(resolve => setTimeout(resolve, 200));
-		
-		// Fetch last 20 ranked solo/duo games
-		const matchListUrl = `https://${regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=20&api_key=${apiKey}`;
-		const matchListRes = await fetch(matchListUrl);
-		
-		if (!matchListRes.ok) {
-			console.warn(`⚠️ Match list failed: ${matchListRes.status}`);
-			return null;
-		}
-		
-		const matchIds = await matchListRes.json();
-		
-		if (!matchIds || matchIds.length === 0) {
-			return null;
-		}
-		
-		// Fetch match details SEQUENTIALLY (one at a time) to avoid rate limiting
-		const matches = [];
-		for (let i = 0; i < Math.min(8, matchIds.length); i++) {
-			try {
-				await new Promise(resolve => setTimeout(resolve, 150)); // 150ms delay between each match
-				const matchUrl = `https://${regional}.api.riotgames.com/lol/match/v5/matches/${matchIds[i]}?api_key=${apiKey}`;
-				const matchRes = await fetch(matchUrl);
-				if (matchRes.ok) {
-					matches.push(await matchRes.json());
-				}
-			} catch (e) {
-				// Continue with next match
-			}
-		}
-		
-		// Count champion frequency
-		const championCounts = {};
-		matches.forEach(match => {
-			const participant = match.info.participants.find(p => p.puuid === puuid);
-			if (participant) {
-				const champId = participant.championId.toString();
-				championCounts[champId] = (championCounts[champId] || 0) + 1;
-			}
-		});
-		
-		// Get top 5 champions sorted by play count
-		const topChampions = Object.entries(championCounts)
-			.sort((a, b) => b[1] - a[1])
-			.slice(0, 5)
-			.map(([champId]) => champId);
-		
-		return topChampions.length > 0 ? topChampions : null;
-	} catch (error) {
-		console.error('Error fetching top champions:', error.message);
-		return null;
-	}
-}
-
 const REGION_ROUTING = {
 	'euw': { platform: 'euw1', routing: 'europe', regional: 'europe' },
 	'eune': { platform: 'eun1', routing: 'europe', regional: 'europe' },
@@ -182,7 +123,7 @@ export async function GET({ url }) {
 					// Profile icon not critical, use default
 				}
 				
-				// 🎮 For TOP 3 players: Fetch real champions from match history!
+				// 🎮 Default champions for spotlight cards (will be loaded on-demand when expanded)
 				let topChampions = [
 					defaultChampions[i % defaultChampions.length],
 					defaultChampions[(i + 1) % defaultChampions.length],
@@ -190,17 +131,6 @@ export async function GET({ url }) {
 					defaultChampions[(i + 3) % defaultChampions.length],
 					defaultChampions[(i + 4) % defaultChampions.length]
 				];
-				
-				if (i < 3) {
-					console.log(`🔍 Fetching match history for top ${i + 1} player: ${gameName}...`);
-					const realChampions = await getTopChampions(p.puuid, regional, platform, RIOT_API_KEY);
-					if (realChampions && realChampions.length > 0) {
-						topChampions = realChampions;
-						console.log(`✅ Got real champions for ${gameName}:`, topChampions);
-					} else {
-						console.warn(`⚠️ Could not fetch champions for ${gameName}, using defaults`);
-					}
-				}
 				
 				return {
 					rank: i + 1,

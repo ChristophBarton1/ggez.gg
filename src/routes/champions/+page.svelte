@@ -337,8 +337,18 @@
 		{/if}
 
 		<!-- Statistics Section -->
-		<div class="header-title mb-5" style="font-size: 1.5rem;">
+		<div class="header-title mb-3" style="font-size: 1.5rem;">
 			Champion <span class="text-[#0acbe6]">Statistics</span>
+		</div>
+		
+		<!-- Active Filters Display -->
+		<div class="text-sm text-gray-400 mb-4 flex items-center gap-2 flex-wrap">
+			<span>📊 Current Meta:</span>
+			<span class="filter-pill">{selectedQueue === 'ranked_solo' ? '🏆 Ranked Solo' : selectedQueue === 'ranked_flex' ? '👥 Flex' : selectedQueue === 'aram' ? '❄️ ARAM' : '🎮 Normal'}</span>
+			<span class="filter-pill">{selectedRegion.toUpperCase()}</span>
+			<span class="filter-pill">{selectedRank.replace('_', ' ')}</span>
+			<span class="filter-pill">{selectedRole === 'all' ? '🌐 All Roles' : selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}</span>
+			<span class="filter-pill">📅 Patch {selectedPatch === 'current' ? '14.24' : selectedPatch}</span>
 		</div>
 
 		<!-- Data Panel -->
@@ -652,6 +662,17 @@
 	
 	.role-icon {
 		font-size: 1rem;
+	}
+	
+	.filter-pill {
+		background: rgba(10, 203, 230, 0.1);
+		border: 1px solid rgba(10, 203, 230, 0.3);
+		color: #0acbe6;
+		padding: 4px 10px;
+		border-radius: 12px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		white-space: nowrap;
 	}
 
 	.search-input {

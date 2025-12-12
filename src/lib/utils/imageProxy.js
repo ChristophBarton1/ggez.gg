@@ -70,17 +70,17 @@ export function getChampionSplashSrcset(championName) {
 /**
  * Item Icon (optimiert) - 30px für Match History
  */
-export function getItemIcon(itemId, version = '14.1.1') {
-	const baseUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${itemId}.png`;
-	return optimizeRiotImage(baseUrl, { width: 30 });
+export function getItemIcon(itemId, size = 64) {
+	// Direct DDragon URL without proxy for crisp images
+	return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/item/${itemId}.png`;
 }
 
 /**
  * Profile Icon (optimiert) - 96px
  */
-export function getProfileIcon(iconId, version = '14.1.1') {
-	const baseUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${iconId}.png`;
-	return optimizeRiotImage(baseUrl, { width: 96 });
+export function getProfileIcon(iconId, size = 64) {
+	// Direct DDragon URL without proxy for crisp images
+	return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/profileicon/${iconId}.png`;
 }
 
 /**

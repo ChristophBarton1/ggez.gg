@@ -1,7 +1,37 @@
 // ⚡ SERVER-SIDE PERFORMANCE OPTIMIZATIONS
+import { lucia } from '$lib/server/auth.js';
+import { initDB } from '$lib/server/db.js';
+
+// Initialize database on startup
+let dbInitialized = false;
+if (!dbInitialized) {
+	await initDB();
+	dbInitialized = true;
+}
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
+	// Auth middleware
+	const sessionId = event.cookies.get(lucia.sessionCookieName);
+	if (sessionId) {
+		const { session, user } = await lucia.validateSession(sessionId);
+		if (session && session.fresh) {
+			const sessionCookie = lucia.createSessionCookie(session.id);
+			event.cookies.set(sessionCookie.name, sessionCookie.value, {
+				path: '.',
+				...sessionCookie.attributes
+			});
+		}
+		if (!session) {
+			const sessionCookie = lucia.createBlankSessionCookie();
+			event.cookies.set(sessionCookie.name, sessionCookie.value, {
+				path: '.',
+				...sessionCookie.attributes
+			});
+		}
+		event.locals.user = user;
+		event.locals.session = session;
+	}
 	const response = await resolve(event, {
 		// Enable HTTP/2 Server Push for critical resources
 		preload: ({ type }) => type === 'js' || type === 'css',

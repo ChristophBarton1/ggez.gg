@@ -1,257 +1,113 @@
 <script>
 	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
 	import { optimizeRiotImage } from '$lib/utils/imageProxy.js';
+	import { getChampionStats } from '$lib/data/metaStats.js';
+    import { fly } from 'svelte/transition';
+    import { quintOut } from 'svelte/easing';
 
 	let champions = [];
 	let filteredChampions = [];
-	let spotlightChampions = [];
-	let championNames = {}; // championId -> name mapping
 	let loading = true;
-	let isInitialized = false; // Prevent loading screen flicker on first load
 	let searchQuery = '';
-	let selectedRole = 'all';
-	let selectedRank = 'platinum_plus';
-	let selectedRegion = 'euw'; // Default to EUW
-	let selectedQueue = 'ranked_solo'; // Default to Ranked Solo
-	let selectedPatch = 'current'; // Current patch
-	let sortBy = 'winRate'; // winRate, pickRate, banRate, tier
-	let sortDirection = 'desc'; // asc or desc
+	let selectedRole = 'ALL';
 	let latestVersion = '';
+	let sortBy = 'winRate'; // Sort by Win Rate
 
-	// Rank filters
-	const ranks = [
-		{ value: 'platinum_plus', label: 'Platinum+', icon: '💎' },
-		{ value: 'diamond_plus', label: 'Diamond+', icon: '💠' },
-		{ value: 'iron', label: 'Iron', icon: '🪨' },
-		{ value: 'bronze', label: 'Bronze', icon: '🥉' },
-		{ value: 'silver', label: 'Silver', icon: '🥈' },
-		{ value: 'gold', label: 'Gold', icon: '🥇' },
-		{ value: 'platinum', label: 'Platinum', icon: '💎' },
-		{ value: 'diamond', label: 'Diamond', icon: '💠' },
-		{ value: 'master', label: 'Master+', icon: '👑' }
-	];
-	
-	// Region filters
-	const regions = [
-		{ value: 'all', label: 'All Regions', icon: '🌍' },
-		{ value: 'euw', label: 'EUW', icon: '🇪🇺' },
-		{ value: 'na', label: 'NA', icon: '🇺🇸' },
-		{ value: 'kr', label: 'KR', icon: '🇰🇷' },
-		{ value: 'eune', label: 'EUNE', icon: '🇪🇺' },
-		{ value: 'br', label: 'BR', icon: '🇧🇷' },
-		{ value: 'lan', label: 'LAN', icon: '🌎' },
-		{ value: 'las', label: 'LAS', icon: '🌎' },
-		{ value: 'oce', label: 'OCE', icon: '🇦🇺' },
-		{ value: 'jp', label: 'JP', icon: '🇯🇵' },
-		{ value: 'tr', label: 'TR', icon: '🇹🇷' }
-	];
-	
-	// Queue Type filters
-	const queueTypes = [
-		{ value: 'ranked_solo', label: 'Ranked Solo/Duo', icon: '🏆' },
-		{ value: 'ranked_flex', label: 'Ranked Flex', icon: '👥' },
-		{ value: 'normal', label: 'Normal (Draft)', icon: '🎮' },
-		{ value: 'aram', label: 'ARAM', icon: '❄️' },
-		{ value: 'all', label: 'All Queues', icon: '🌐' }
-	];
-	
-	// Patch filters (current + last 3 patches)
-	const patches = [
-		{ value: 'current', label: 'Patch 14.24', icon: '🆕' },
-		{ value: '14.23', label: 'Patch 14.23', icon: '📊' },
-		{ value: '14.22', label: 'Patch 14.22', icon: '📊' },
-		{ value: '14.21', label: 'Patch 14.21', icon: '📊' }
-	];
-
-	// Role filters (matching LoLalytics lanes)
+	// Role filters - matching the screenshot
 	const roles = [
-		{ value: 'all', label: 'All Roles', icon: '🌐' },
-		{ value: 'top', label: 'Top', icon: '⬆️' },
-		{ value: 'jungle', label: 'Jungle', icon: '🌲' },
-		{ value: 'mid', label: 'Mid', icon: '⭐' },
-		{ value: 'adc', label: 'ADC', icon: '🎯' },
-		{ value: 'support', label: 'Support', icon: '🛡️' }
+		{ value: 'ALL', label: 'ALL', icon: '🌐' },
+		{ value: 'FIGHTER', label: 'FIGHTER', icon: '⚔️' },
+		{ value: 'MAGE', label: 'MAGE', icon: '🔮' },
+		{ value: 'ASSASSIN', label: 'ASSASSIN', icon: '🗡️' },
+		{ value: 'MARKSMAN', label: 'MARKSMAN', icon: '🎯' },
+		{ value: 'SUPPORT', label: 'SUPPORT', icon: '🛡️' },
+		{ value: 'TANK', label: 'TANK', icon: '🛡️' }
 	];
 
 	onMount(async () => {
 		await loadChampions();
-		isInitialized = true;
 	});
 
-	let loadPromise = null;
-	
 	async function loadChampions() {
-		// Prevent multiple simultaneous loads
-		if (loadPromise) {
-			return loadPromise;
-		}
-		
-		loadPromise = (async () => {
-			try {
-				loading = true;
-				console.log('🔄 Loading champions with filters:', { queue: selectedQueue, patch: selectedPatch, region: selectedRegion, rank: selectedRank, role: selectedRole });
-				
-				// Only fetch version once
-				if (!latestVersion) {
-					const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
-					const versions = await versionRes.json();
-					latestVersion = versions[0];
-				}
-				
-				// Only fetch champion names once
-				if (Object.keys(championNames).length === 0) {
-					const champDataRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
-					const champData = await champDataRes.json();
-					
-					// Build championId -> name/key mapping
-					Object.values(champData.data).forEach(champ => {
-						championNames[champ.key] = {
-							id: champ.id,
-							name: champ.name,
-							key: champ.key
-						};
-					});
-				}
-				
-				// Fetch stats from our API with all filters
-				const metaRes = await fetch(`/api/champions-meta?region=${selectedRegion}&rank=${selectedRank}&role=${selectedRole}&queue=${selectedQueue}&patch=${selectedPatch}`);
-				const metaData = await metaRes.json();
-				
-				if (!metaData.success) {
-					throw new Error('Failed to fetch meta data');
-				}
-				
-				// Enrich with names and images
-				// Use a Set to track unique championIds and prevent duplicates
-				const seenIds = new Set();
-				champions = metaData.champions
-					.map((stat, index) => {
-						const champInfo = championNames[stat.championId] || { id: 'Unknown', name: 'Unknown' };
-						
-						// Skip if we've already seen this championId
-						if (seenIds.has(stat.championId)) {
-							return null;
-						}
-						seenIds.add(stat.championId);
-						
-						return {
-							rank: index + 1,
-							championId: stat.championId,
-							id: champInfo.id,
-							name: champInfo.name,
-							tier: stat.tier,
-							winRate: stat.winRate,
-							pickRate: stat.pickRate,
-							banRate: stat.banRate,
-							games: stat.games,
-							// ⚡ Optimized WebP images (70% smaller!)
-							image: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champInfo.id}.png`, { width: 48 }),
-							// Mini splash (400px) for secondary cards
-							splash: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 400 }),
-							// Hero splash (800px) for main spotlight - SHARP!
-							splashHero: optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champInfo.id}_0.jpg`, { width: 800 })
-						};
-					})
-					.filter(c => c !== null && c.name !== 'Unknown'); // Filter out null and unknown champions
-				
-				// Get top 5 for spotlight
-				spotlightChampions = champions.slice(0, 5).map((c, i) => ({
-					...c,
-					tag: i === 0 ? `God Tier • ${c.winRate}% WR` : `${c.tier} Tier`,
-					tagColor: i === 0 ? '#c8aa6e' : ['#a855f7', '#3b82f6', '#10b981', '#e84057'][i - 1]
-				}));
-				
-				filteredChampions = champions;
-				loading = false;
-				
-				// Clear old console logs
-				if (champions.length > 0) {
-					console.log(`✅ ${champions.length} champions - ${selectedQueue.toUpperCase()} | ${selectedRegion.toUpperCase()} | ${selectedRank} | ${selectedRole} | ${selectedPatch}`);
-				}
-				
-			} catch (error) {
-				console.error('❌ Error loading champions:', error);
-				loading = false;
-			} finally {
-				loadPromise = null;
-			}
-		})();
-		
-		return loadPromise;
-	}
-	
-	// Debounced reload when filters change
-	let filterTimeout;
-	let previousFilters = '';
-	$: {
-		// Create a key from current filter values
-		const currentFilters = `${selectedRank}-${selectedRole}-${selectedRegion}-${selectedQueue}-${selectedPatch}`;
-		
-		// Only reload if filters actually changed AND we're initialized
-		if (isInitialized && previousFilters && currentFilters !== previousFilters) {
-			clearTimeout(filterTimeout);
-			filterTimeout = setTimeout(() => {
-				loadChampions();
-			}, 500);
-		}
-		
-		// Update previous filters
-		previousFilters = currentFilters;
-	}
-
-	// Search filter and sorting (client-side)
-	$: {
-		let result = champions.filter(champ => {
-			return champ.name.toLowerCase().includes(searchQuery.toLowerCase());
-		});
-		
-		// Sort by selected column
-		result.sort((a, b) => {
-			let aVal, bVal;
+		try {
+			loading = true;
 			
-			if (sortBy === 'tier') {
-				// Tier sorting: S+ > S > A+ > A > B
-				const tierOrder = { 'S+': 5, 'S': 4, 'A+': 3, 'A': 2, 'B': 1 };
-				aVal = tierOrder[a.tier] || 0;
-				bVal = tierOrder[b.tier] || 0;
-			} else {
-				aVal = parseFloat(a[sortBy]) || 0;
-				bVal = parseFloat(b[sortBy]) || 0;
-			}
+			// Fetch latest version
+			const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+			const versions = await versionRes.json();
+			latestVersion = versions[0];
 			
-			return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
-		});
-		
-		// Update ranks after sorting
-		filteredChampions = result.map((c, i) => ({ ...c, rank: i + 1 }));
-	}
-	
-	// Toggle sort
-	function toggleSort(column) {
-		if (sortBy === column) {
-			sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
-		} else {
-			sortBy = column;
-			sortDirection = 'desc';
+			// Fetch all champions data
+			const champDataRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`);
+			const champData = await champDataRes.json();
+			
+			// Build champions array with all data
+			champions = Object.values(champData.data).map(champ => {
+				// Get primary role (tags[0])
+				const primaryRole = champ.tags[0]?.toUpperCase() || 'FIGHTER';
+				
+				// Get realistic meta stats
+				const stats = getChampionStats(champ.name);
+				
+				return {
+					id: champ.id,
+					name: champ.name,
+					title: champ.title,
+					role: primaryRole,
+					tags: champ.tags.map(t => t.toUpperCase()),
+					winRate: stats.winRate,
+					pickRate: stats.pickRate,
+					tier: stats.tier,
+					// Use centered splash art (loading screen art)
+					splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champ.id}_0.jpg`,
+					// Square icon as fallback
+					icon: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champ.id}.png`
+				};
+			});
+			
+			// Sort by Win Rate by default (descending)
+			champions.sort((a, b) => b.winRate - a.winRate);
+			
+			filteredChampions = champions;
+			loading = false;
+			
+		} catch (error) {
+			console.error('❌ Error loading champions:', error);
+			loading = false;
 		}
 	}
 
-	function getTierClass(tier) {
-		if (tier === 'S+' || tier === 'S') return 'tier-s';
-		if (tier === 'A+' || tier === 'A') return 'tier-a';
-		return 'tier-b';
+	// Filter champions by role and search
+	$: {
+		let result = champions;
+		
+		// Filter by role
+		if (selectedRole !== 'ALL') {
+			result = result.filter(champ => champ.tags.includes(selectedRole));
+		}
+		
+		// Filter by search query
+		if (searchQuery) {
+			result = result.filter(champ => 
+				champ.name.toLowerCase().includes(searchQuery.toLowerCase())
+			);
+		}
+		
+		filteredChampions = result;
 	}
-	
-	function getRoleLabel(role) {
-		const roleMap = { top: 'Top', jungle: 'Jungle', mid: 'Mid', adc: 'ADC', support: 'Support' };
-		return roleMap[role] || role;
+
+	function getWinRateColor(winRate) {
+		const wr = parseFloat(winRate);
+		if (wr >= 52) return '#10b981'; // Green (S-Tier)
+		if (wr >= 50) return '#3b82f6'; // Blue (A-Tier)
+		if (wr >= 48) return '#f59e0b'; // Orange (B-Tier)
+		return '#ef4444'; // Red (C-Tier)
 	}
 </script>
 
 <svelte:head>
-	<title>Champion Meta Hub - ggez.gg</title>
-	<meta name="description" content="View the current League of Legends meta, top tier champions, and statistics for all 172 champions.">
+	<title>Champions - ggez.gg</title>
+	<meta name="description" content="League of Legends Champion Gallery with all 172 champions, their roles, and mastery statistics.">
 </svelte:head>
 
 <!-- Background with Grid Pattern -->
@@ -259,541 +115,307 @@
 	<div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:40px_40px]"></div>
 </div>
 
-<!-- Navigation removed - now using global Navbar from layout -->
-
-<div class="max-w-[1400px] mx-auto px-5 py-10">
-
-	{#if loading && isInitialized}
-		<!-- Show loading screen only after initial load -->
-		<div class="flex flex-col items-center justify-center py-32 gap-4">
-			<div class="w-16 h-16 border-4 border-[#0acbe6]/30 border-t-[#c8aa6e] rounded-full animate-spin"></div>
-			<div class="font-cinzel text-[#c8aa6e] animate-pulse">Loading Meta Data...</div>
+<div class="max-w-[1600px] mx-auto px-6 pt-28 pb-20 relative z-10">
+	
+	{#if loading}
+		<!-- Loading State - Epic -->
+		<div class="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+			<div class="relative">
+				<div class="w-20 h-20 border-4 border-[#0acbe6]/20 border-t-[#c8aa6e] rounded-full animate-spin"></div>
+				<div class="absolute inset-0 border-4 border-[#c8aa6e]/20 border-b-[#0acbe6] rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+			</div>
+			<div class="font-cinzel text-2xl text-[#c8aa6e] tracking-[0.2em] animate-pulse text-shadow-gold">SUMMONING CHAMPIONS...</div>
 		</div>
-	{:else if !loading}
-		<!-- Header -->
-		<div class="header-title mb-5">
-			Current <span class="text-[#0acbe6]">Meta</span>
+	{:else}
+		
+		<!-- Header - Epic -->
+		<div class="flex flex-col md:flex-row justify-between items-end mb-12 border-b border-white/5 pb-8" in:fly={{ y: -30, duration: 800, easing: quintOut }}>
+			<div class="relative">
+				<div class="absolute -left-4 -top-4 w-20 h-20 bg-[#c8aa6e]/20 blur-xl rounded-full"></div>
+				<h1 class="text-5xl md:text-6xl font-cinzel font-black text-white mb-2 tracking-wide relative z-10 drop-shadow-lg">
+					CHAMPION <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#c8aa6e] to-[#f0e6d2]">GALLERY</span>
+				</h1>
+				<p class="text-gray-400 text-lg font-light tracking-wider flex items-center gap-2">
+					<span class="w-2 h-2 bg-[#c8aa6e] rounded-full"></span>
+					PATCH 14.23 SNAPSHOT
+					<span class="w-2 h-2 bg-[#c8aa6e] rounded-full"></span>
+				</p>
+			</div>
+			
+			<!-- Stats Counter -->
+			<div class="text-right hidden md:block">
+				<div class="text-4xl font-bold text-white font-cinzel">{filteredChampions.length}</div>
+				<div class="text-xs text-[#c8aa6e] tracking-[0.2em] uppercase">Champions Found</div>
+			</div>
 		</div>
 
-		<!-- Spotlight Grid (Top 5 Meta Champions) -->
-		{#if spotlightChampions.length >= 5}
-		<div class="spotlight-grid mb-20">
-			<!-- Hero Card -->
-			<div class="spotlight-card spotlight-hero group cursor-pointer">
-				<img 
-					src={spotlightChampions[0].splashHero} 
-					alt={spotlightChampions[0].name} 
-					class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-					fetchpriority="high"
-					loading="eager"
-					decoding="async"
+		<!-- Controls Bar (Search + Filter) -->
+		<div class="sticky top-20 z-40 bg-[#0a1428]/80 backdrop-blur-md border border-white/5 rounded-xl p-4 mb-10 shadow-2xl" in:fly={{ y: 20, duration: 800, delay: 200, easing: quintOut }}>
+			<div class="flex flex-col md:flex-row gap-6 items-center justify-between">
+				<!-- Search -->
+				<div class="relative w-full md:w-96 group">
+					<div class="absolute inset-0 bg-gradient-to-r from-[#c8aa6e] to-[#0acbe6] rounded-lg opacity-0 group-focus-within:opacity-20 transition-opacity blur"></div>
+					<svg xmlns="http://www.w3.org/2000/svg" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#c8aa6e] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+					</svg>
+					<input 
+						type="text" 
+						bind:value={searchQuery}
+						placeholder="Search for a champion..."
+						class="w-full pl-12 pr-4 py-3 bg-[#0f1923] border border-white/10 rounded-lg text-white placeholder-gray-500 focus:border-[#c8aa6e]/50 focus:outline-none transition-all"
+					/>
+				</div>
+
+				<!-- Role Filters -->
+				<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide w-full md:w-auto">
+					{#each roles as role}
+						<button
+							on:click={() => selectedRole = role.value}
+							class="role-filter-btn group"
+							class:active={selectedRole === role.value}
+						>
+							<div class="absolute inset-0 bg-gradient-to-br from-[#c8aa6e]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
+							<span class="text-lg relative z-10">{role.icon}</span>
+							<span class="font-bold text-xs tracking-widest relative z-10">{role.label}</span>
+						</button>
+					{/each}
+				</div>
+			</div>
+		</div>
+
+		<!-- Champions Grid -->
+		<div class="champions-grid">
+			{#each filteredChampions as champion (champion.id)}
+				<a 
+					href="/champion/{champion.id}"
+					class="champion-card group"
 				>
-				<div class="overlay">
-					<div class="meta-tag">{spotlightChampions[0].tag}</div>
-					<div class="hero-name">{spotlightChampions[0].name}</div>
-					<div class="hero-stat">
-						<span>Pick Rate: <b>{spotlightChampions[0].pickRate}%</b></span>
-						<span>Ban Rate: <b>{spotlightChampions[0].banRate}%</b></span>
+					<!-- Champion Image -->
+					<div class="champion-image-container">
+						<img 
+							src={champion.splash}
+							alt={champion.name}
+							class="champion-image"
+							loading="lazy"
+							on:error={(e) => { e.target.src = champion.icon; }}
+						/>
+						<div class="champion-overlay"></div>
+						<!-- Hover Glow -->
+						<div class="absolute inset-0 bg-gradient-to-t from-[#c8aa6e]/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+						
+						<!-- Tier Badge -->
+						<div class="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur border border-white/10 rounded text-xs font-bold text-white">
+							{champion.tier}-TIER
+						</div>
 					</div>
-				</div>
-			</div>
-
-			<!-- Column 1 -->
-			<div class="spotlight-col">
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[1].splash} alt={spotlightChampions[1].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
-					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[1].tagColor}; color: white;">{spotlightChampions[1].tag}</div>
-						<div class="mini-name">{spotlightChampions[1].name}</div>
+					
+					<!-- Champion Info -->
+					<div class="champion-info">
+						<div class="flex justify-between items-start mb-1">
+							<div class="champion-name">{champion.name}</div>
+							<!-- Role Icon Mini -->
+							<div class="text-[10px] text-gray-500 border border-white/10 px-1 rounded uppercase tracking-wider">{champion.role}</div>
+						</div>
+						<div class="champion-title">{champion.title}</div>
+						
+						<!-- Winrate Meter -->
+						<div class="mt-3 flex items-center gap-2">
+							<div class="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+								<div class="h-full rounded-full transition-all duration-500" 
+									 style="width: {(champion.winRate - 40) * 5}%; background-color: {getWinRateColor(champion.winRate)}"></div>
+							</div>
+							<span class="text-[10px] font-bold" style="color: {getWinRateColor(champion.winRate)}">{champion.winRate}% WR</span>
+						</div>
 					</div>
-				</div>
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[2].splash} alt={spotlightChampions[2].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
-					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[2].tagColor}; color: white;">{spotlightChampions[2].tag}</div>
-						<div class="mini-name">{spotlightChampions[2].name}</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Column 2 -->
-			<div class="spotlight-col">
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[3].splash} alt={spotlightChampions[3].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
-					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[3].tagColor}; color: white;">{spotlightChampions[3].tag}</div>
-						<div class="mini-name">{spotlightChampions[3].name}</div>
-					</div>
-				</div>
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
-					<img src={spotlightChampions[4].splash} alt={spotlightChampions[4].name} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
-					<div class="mini-info">
-						<div class="meta-tag" style="background: {spotlightChampions[4].tagColor}; color: white;">{spotlightChampions[4].tag}</div>
-						<div class="mini-name">{spotlightChampions[4].name}</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		{/if}
-
-		<!-- Statistics Section -->
-		<div class="header-title mb-3" style="font-size: 1.5rem;">
-			Champion <span class="text-[#0acbe6]">Statistics</span>
+				</a>
+			{/each}
 		</div>
 		
-		<!-- Active Filters Display -->
-		<div class="text-sm text-gray-400 mb-4 flex items-center gap-2 flex-wrap">
-			<span>📊 Current Meta:</span>
-			<span class="filter-pill">{selectedQueue === 'ranked_solo' ? '🏆 Ranked Solo' : selectedQueue === 'ranked_flex' ? '👥 Flex' : selectedQueue === 'aram' ? '❄️ ARAM' : '🎮 Normal'}</span>
-			<span class="filter-pill">{selectedRegion.toUpperCase()}</span>
-			<span class="filter-pill">{selectedRank.replace('_', ' ')}</span>
-			<span class="filter-pill">{selectedRole === 'all' ? '🌐 All Roles' : selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}</span>
-			<span class="filter-pill">📅 Patch {selectedPatch === 'current' ? '14.24' : selectedPatch}</span>
-		</div>
-
-		<!-- Data Panel -->
-		<div class="data-panel">
-			<!-- Controls -->
-			<div class="panel-controls">
-				<!-- Rank Filter -->
-				<div class="filter-group">
-					<label class="filter-label" for="rank-select">Rank:</label>
-					<select id="rank-select" bind:value={selectedRank} class="rank-select">
-						{#each ranks as rank}
-							<option value={rank.value}>{rank.icon} {rank.label}</option>
-						{/each}
-					</select>
-				</div>
-				
-				<!-- Region Filter -->
-				<div class="filter-group">
-					<label class="filter-label" for="region-select">Region:</label>
-					<select id="region-select" bind:value={selectedRegion} class="rank-select">
-						{#each regions as region}
-							<option value={region.value}>{region.icon} {region.label}</option>
-						{/each}
-					</select>
-				</div>
-				
-				<!-- Queue Type Filter -->
-				<div class="filter-group">
-					<label class="filter-label" for="queue-select">Queue:</label>
-					<select id="queue-select" bind:value={selectedQueue} class="rank-select">
-						{#each queueTypes as queue}
-							<option value={queue.value}>{queue.icon} {queue.label}</option>
-						{/each}
-					</select>
-				</div>
-				
-				<!-- Patch Filter -->
-				<div class="filter-group">
-					<label class="filter-label" for="patch-select">Patch:</label>
-					<select id="patch-select" bind:value={selectedPatch} class="rank-select">
-						{#each patches as patch}
-							<option value={patch.value}>{patch.icon} {patch.label}</option>
-						{/each}
-					</select>
-				</div>
-				
-				<!-- Role Filters -->
-				{#each roles as role}
-					<button 
-						class="filter-btn {selectedRole === role.value ? 'active' : ''}" 
-						on:click={() => selectedRole = role.value}
-					>
-						<span class="role-icon">{role.icon}</span>
-						{role.label}
-					</button>
-				{/each}
-				
-				<input 
-					type="text" 
-					placeholder="🔍 Search champion..." 
-					bind:value={searchQuery}
-					class="search-input"
-				>
+		{#if filteredChampions.length === 0}
+			<div class="flex flex-col items-center justify-center py-32 text-gray-500">
+				<div class="text-6xl mb-4 opacity-20">⚔️</div>
+				<p class="text-2xl font-cinzel text-white mb-2">No Champions Found</p>
+				<p class="text-sm">Try summoning another query.</p>
 			</div>
-
-			<!-- Table -->
-			<div class="table-wrapper">
-				<table class="champ-table">
-					<thead>
-						<tr>
-							<th style="width: 50px;">#</th>
-							<th>Champion</th>
-							<th class="sortable" on:click={() => toggleSort('tier')}>
-								Tier
-								{#if sortBy === 'tier'}
-									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
-								{/if}
-							</th>
-							<th class="sortable" on:click={() => toggleSort('winRate')}>
-								Win Rate
-								{#if sortBy === 'winRate'}
-									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
-								{/if}
-							</th>
-							<th class="sortable" on:click={() => toggleSort('pickRate')}>
-								Pick Rate
-								{#if sortBy === 'pickRate'}
-									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
-								{/if}
-							</th>
-							<th class="sortable" on:click={() => toggleSort('banRate')}>
-								Ban Rate
-								{#if sortBy === 'banRate'}
-									<span class="sort-icon">{sortDirection === 'desc' ? '▼' : '▲'}</span>
-								{/if}
-							</th>
-							<th>Trend</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each filteredChampions as champ (champ.championId)}
-							<tr class="table-row" transition:fade={{ duration: 200 }}>
-								<td class="text-[#64748b] font-bold">{champ.rank}</td>
-								<td>
-									<div class="col-champ">
-										<img src={champ.image} alt={champ.name} width="40" height="40">
-										<div class="champ-text">
-											<div>{champ.name}</div>
-											<div>{champ.role}</div>
-										</div>
-									</div>
-								</td>
-								<td>
-									<span class="tier-badge {getTierClass(champ.tier)}">{champ.tier}</span>
-								</td>
-								<td class="winrate">{champ.winRate}%</td>
-								<td>{champ.pickRate}%</td>
-								<td class="banrate">{champ.banRate}%</td>
-								<td>
-									<div class="trend-line">
-										<div class="bar" style="height: 40%;"></div>
-										<div class="bar" style="height: 60%;"></div>
-										<div class="bar up" style="height: 90%;"></div>
-										<div class="bar up" style="height: 70%;"></div>
-									</div>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</div>
-
-		<div class="mt-8 text-center text-[#64748b] text-sm font-cinzel">
-			Showing {filteredChampions.length} of {champions.length} Champions
-		</div>
+		{/if}
+		
 	{/if}
 </div>
 
 <style>
-	.header-title {
-		font-family: 'Cinzel', serif;
-		font-size: 2rem;
-		color: white;
-		margin-bottom: 20px;
+	/* Role Filter Buttons - Epic */
+	.role-filter-btn {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 15px;
+		justify-content: center;
+		gap: 0.25rem;
+		padding: 0.75rem 1.25rem;
+		min-width: 80px;
+		background: rgba(15, 25, 35, 0.4);
+		border: 1px solid rgba(255, 255, 255, 0.05);
+		border-radius: 0.75rem;
+		color: rgba(255, 255, 255, 0.5);
+		cursor: pointer;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		position: relative;
+		overflow: hidden;
 	}
 
-	/* Spotlight Grid */
-	.spotlight-grid {
+	.role-filter-btn:hover {
+		background: rgba(15, 25, 35, 0.8);
+		border-color: rgba(200, 170, 110, 0.3);
+		color: #c8aa6e;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	}
+
+	.role-filter-btn.active {
+		background: linear-gradient(135deg, rgba(200, 170, 110, 0.15), rgba(15, 25, 35, 0.8));
+		border-color: #c8aa6e;
+		color: #c8aa6e;
+		box-shadow: 0 0 15px rgba(200, 170, 110, 0.15);
+	}
+
+	.text-shadow-gold {
+		text-shadow: 0 0 10px rgba(200, 170, 110, 0.5);
+	}
+
+	/* Champions Grid - 7 columns like in screenshot */
+	.champions-grid {
 		display: grid;
-		grid-template-columns: 2fr 1fr 1fr;
-		gap: 20px;
-		margin-bottom: 80px;
-		height: 350px;
+		grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+		gap: 1.25rem;
+	}
+
+	@media (min-width: 1400px) {
+		.champions-grid {
+			grid-template-columns: repeat(6, 1fr);
+		}
 	}
 
 	@media (max-width: 768px) {
-		.spotlight-grid {
-			grid-template-columns: 1fr;
-			height: auto;
+		.champions-grid {
+			grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+			gap: 0.75rem;
 		}
-		.spotlight-hero { height: 300px; }
-		.spotlight-col { flex-direction: row; height: 150px; }
 	}
 
-	.spotlight-card {
+	/* Champion Card - Epic */
+	.champion-card {
 		position: relative;
-		border-radius: 12px;
+		background: rgba(15, 20, 28, 0.6);
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.05);
+		border-radius: 1rem;
 		overflow: hidden;
-		border: 1px solid rgba(255,255,255,0.05);
-		background: #0f1118;
-		transition: 0.3s;
 		cursor: pointer;
-	}
-	.spotlight-card:hover {
-		border-color: #0acbe6;
-		box-shadow: 0 0 30px rgba(10, 203, 230, 0.1);
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 	}
 
-	.overlay {
-		position: absolute;
-		bottom: 0; left: 0; right: 0;
-		background: linear-gradient(to top, #050508 10%, transparent);
-		padding: 30px;
-		z-index: 2;
+	.champion-card:hover {
+		transform: translateY(-8px) scale(1.02);
+		border-color: #c8aa6e;
+		box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.6), 0 0 20px rgba(200, 170, 110, 0.2);
+		z-index: 10;
 	}
 
-	.meta-tag {
-		background: #0acbe6;
-		color: #000;
-		font-weight: 800;
-		padding: 4px 10px;
-		border-radius: 4px;
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		display: inline-block;
-		margin-bottom: 10px;
-	}
-
-	.hero-name {
-		font-family: 'Cinzel', serif;
-		font-size: 3rem;
-		font-weight: 900;
-		line-height: 1;
-		text-transform: uppercase;
-		text-shadow: 0 5px 15px rgba(0,0,0,0.8);
-	}
-
-	.hero-stat {
-		color: #64748b;
-		font-size: 0.9rem;
-		margin-top: 5px;
-		display: flex;
-		gap: 15px;
-	}
-	.hero-stat b { color: #c8aa6e; }
-
-	.spotlight-col {
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-	}
-
-	.spotlight-mini {
-		flex: 1;
+	/* Champion Image Container */
+	.champion-image-container {
 		position: relative;
-	}
-
-	.mini-info {
-		position: absolute;
-		bottom: 15px; left: 15px;
-		pointer-events: none;
-	}
-
-	.mini-name {
-		font-family: 'Cinzel';
-		font-weight: 700;
-		font-size: 1.2rem;
-	}
-
-	/* Data Panel */
-	.data-panel {
-		background: #0f1118;
-		border: 1px solid rgba(255,255,255,0.05);
-		border-radius: 12px;
-		overflow: hidden;
-	}
-
-	.panel-controls {
-		padding: 20px;
-		display: flex;
-		gap: 15px;
-		border-bottom: 1px solid rgba(255,255,255,0.05);
-		flex-wrap: wrap;
-		align-items: center;
-	}
-
-	.filter-group {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 8px 12px;
-		background: rgba(10, 203, 230, 0.05);
-		border: 1px solid rgba(10, 203, 230, 0.2);
-		border-radius: 8px;
-	}
-
-	.filter-label {
-		font-size: 0.85rem;
-		color: #0acbe6;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.rank-select {
-		background: transparent;
-		border: none;
-		color: white;
-		font-size: 0.9rem;
-		font-weight: 600;
-		cursor: pointer;
-		outline: none;
-		padding: 4px 8px;
-	}
-	.rank-select option {
-		background: #1a1b23;
-		color: white;
-	}
-
-	.filter-btn {
-		background: transparent;
-		border: 1px solid rgba(255,255,255,0.05);
-		color: #64748b;
-		padding: 8px 16px;
-		border-radius: 6px;
-		cursor: pointer;
-		transition: 0.2s;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	.filter-btn.active, .filter-btn:hover {
-		background: rgba(10, 203, 230, 0.1);
-		color: #0acbe6;
-		border-color: #0acbe6;
-	}
-	
-	.role-icon {
-		font-size: 1rem;
-	}
-	
-	.filter-pill {
-		background: rgba(10, 203, 230, 0.1);
-		border: 1px solid rgba(10, 203, 230, 0.3);
-		color: #0acbe6;
-		padding: 4px 10px;
-		border-radius: 12px;
-		font-size: 0.85rem;
-		font-weight: 600;
-		white-space: nowrap;
-	}
-
-	.search-input {
-		margin-left: auto;
-		background: transparent;
-		border: 1px solid #333;
-		color: white;
-		padding: 8px 16px;
-		border-radius: 6px;
-		outline: none;
-		transition: 0.2s;
-	}
-	.search-input:focus {
-		border-color: #0acbe6;
-	}
-
-	.table-wrapper {
-		overflow-x: auto;
-	}
-
-	.champ-table {
 		width: 100%;
-		border-collapse: collapse;
-		text-align: left;
+		padding-top: 130%; /* Taller aspect ratio */
+		overflow: hidden;
+		background: #0f1923;
 	}
 
-	.champ-table th {
-		background: rgba(0,0,0,0.3);
-		color: #64748b;
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		padding: 15px 20px;
-		font-weight: 600;
-		letter-spacing: 1px;
-		border-bottom: 1px solid rgba(255,255,255,0.05);
-	}
-
-	.sortable {
-		cursor: pointer;
-		user-select: none;
-		transition: 0.2s;
-		position: relative;
-	}
-	.sortable:hover {
-		color: #0acbe6;
-		background: rgba(10, 203, 230, 0.05);
-	}
-
-	.sort-icon {
-		margin-left: 5px;
-		font-size: 0.7rem;
-		color: #0acbe6;
-	}
-
-	.champ-table td {
-		padding: 15px 20px;
-		border-bottom: 1px solid rgba(255,255,255,0.05);
-		color: white;
-		font-size: 0.95rem;
-		transition: 0.2s;
-	}
-
-	.table-row:hover td {
-		background: rgba(255,255,255,0.03);
-	}
-
-	.col-champ {
-		display: flex;
-		align-items: center;
-		gap: 15px;
-	}
-	.col-champ img {
-		width: 40px; height: 40px;
-		border-radius: 6px;
+	.champion-image {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
 		object-fit: cover;
-		border: 1px solid rgba(255,255,255,0.1);
+		transition: transform 0.5s ease;
+		filter: saturate(0.9);
 	}
 
-	.champ-text div:first-child { font-weight: 700; }
-	.champ-text div:last-child { font-size: 0.8rem; color: #64748b; }
-
-	.tier-badge {
-		font-family: 'Cinzel', serif;
-		font-weight: 900;
-		padding: 4px 8px;
-		border-radius: 4px;
-		font-size: 0.9rem;
-		display: inline-block;
-		text-align: center;
-		width: 40px;
-	}
-	.tier-s {
-		background: linear-gradient(135deg, #FFD700, #B8860B);
-		color: #000;
-		box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-	}
-	.tier-a {
-		background: linear-gradient(135deg, #a855f7, #6b21a8);
-		color: #fff;
-	}
-	.tier-b {
-		background: linear-gradient(135deg, #3b82f6, #1e40af);
-		color: #fff;
+	.champion-card:hover .champion-image {
+		transform: scale(1.1);
+		filter: saturate(1.1);
 	}
 
-	.winrate { color: #0acbe6; font-weight: 600; }
-	.banrate { color: #64748b; }
+	.champion-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(to bottom, transparent 40%, rgba(10, 20, 30, 0.95) 100%);
+		opacity: 0.8;
+		transition: opacity 0.3s;
+	}
 
-	.trend-line {
-		width: 60px;
-		height: 20px;
-		display: flex;
-		align-items: flex-end;
-		gap: 2px;
-		opacity: 0.7;
+	/* Champion Info */
+	.champion-info {
+		padding: 1rem;
+		position: relative;
+		background: linear-gradient(to bottom, transparent, rgba(10, 20, 30, 0.8));
+		margin-top: -3rem; /* Overlap image */
 	}
-	.bar {
-		width: 20%;
-		background: #64748b;
-		border-radius: 2px;
+
+	.champion-name {
+		font-size: 1rem;
+		font-weight: 800;
+		color: white;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 	}
-	.bar.up { background: #0acbe6; }
-	.bar.down { background: #e84057; }
+
+	.champion-title {
+		font-size: 0.65rem;
+		color: rgba(255, 255, 255, 0.5);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		margin-bottom: 0.5rem;
+	}
+
+	/* Hide scrollbar but keep functionality */
+	.scrollbar-hide {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+
+	.scrollbar-hide::-webkit-scrollbar {
+		display: none;
+	}
+
+	/* Loading animation */
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.animate-spin {
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+	}
+
+	.animate-pulse {
+		animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	}
 </style>

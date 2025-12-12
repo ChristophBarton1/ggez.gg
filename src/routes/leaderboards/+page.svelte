@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { fade } from 'svelte/transition';
 	import { optimizeRiotImage } from '$lib/utils/imageProxy.js';
 
@@ -85,6 +86,7 @@
 					mainChampion: p.mainChampion,
 					topChampions: p.topChampions || [p.mainChampion],
 					profileIconId: p.profileIconId,
+					puuid: p.puuid, // ✅ ADD PUUID for loading real champions
 					// Main champ splash for spotlight
 					splash: championNames[p.mainChampion] ? 
 						optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championNames[p.mainChampion].id}_0.jpg`, { width: 400 }) : '',
@@ -103,10 +105,13 @@
 				loading = false;
 				
 				if (players.length > 0) {
-					console.log(`✅ ${players.length} players - ${selectedRegion.toUpperCase()}`);
+					console.log(` ${players.length} players - ${selectedRegion.toUpperCase()}`);
+					
+					// Pre-load champions for top 5 spotlight players in background
+					preloadTopPlayersChampions();
 				}
 			} catch (error) {
-				console.error('❌ Error loading players:', error);
+				console.error(' Error loading players:', error);
 				loading = false;
 			} finally {
 				loadPromise = null;
@@ -130,6 +135,28 @@
 			}, 500);
 		}
 		previousRegion = selectedRegion;
+	}
+
+	// Pre-load champions for top 5 players
+	async function preloadTopPlayersChampions() {
+		const top5 = players.slice(0, 5);
+		for (let i = 0; i < top5.length; i++) {
+			const player = top5[i];
+			if (!loadedChampions.has(player.puuid)) {
+				// Stagger requests to avoid rate limiting
+				await new Promise(resolve => setTimeout(resolve, i * 300));
+				try {
+					const res = await fetch(`/api/leaderboards/champions?puuid=${player.puuid}&region=${selectedRegion}`);
+					const data = await res.json();
+					if (data.success && data.champions) {
+						loadedChampions = new Map(loadedChampions).set(player.puuid, data.champions);
+						console.log(`🔥 Pre-loaded champions for ${player.summonerName}`);
+					}
+				} catch (error) {
+					console.warn(`⚠️ Pre-load failed for ${player.summonerName}`);
+				}
+			}
+		}
 	}
 
 	// Toggle row expansion and load champions on-demand
@@ -224,7 +251,7 @@
 		{#if spotlightPlayers.length >= 5}
 		<div class="spotlight-grid mb-20">
 			<!-- Hero Card -->
-			<div class="spotlight-card spotlight-hero group cursor-pointer">
+			<div class="spotlight-card spotlight-hero group cursor-pointer" on:click={() => goto(`/${selectedRegion}/${spotlightPlayers[0].summonerName}/${spotlightPlayers[0].tagLine}`)}>
 				<img 
 					src={spotlightPlayers[0].splashHero} 
 					alt={spotlightPlayers[0].summonerName} 
@@ -245,14 +272,14 @@
 
 			<!-- Column 1 -->
 			<div class="spotlight-col">
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
+				<div class="spotlight-card spotlight-mini group cursor-pointer" on:click={() => goto(`/${selectedRegion}/${spotlightPlayers[1].summonerName}/${spotlightPlayers[1].tagLine}`)}>
 					<img src={spotlightPlayers[1].splash} alt={spotlightPlayers[1].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
 						<div class="meta-tag" style="background: {spotlightPlayers[1].tagColor}; color: white;">{spotlightPlayers[1].tag}</div>
 						<div class="mini-name">{spotlightPlayers[1].summonerName}</div>
 					</div>
 				</div>
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
+				<div class="spotlight-card spotlight-mini group cursor-pointer" on:click={() => goto(`/${selectedRegion}/${spotlightPlayers[2].summonerName}/${spotlightPlayers[2].tagLine}`)}>
 					<img src={spotlightPlayers[2].splash} alt={spotlightPlayers[2].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
 						<div class="meta-tag" style="background: {spotlightPlayers[2].tagColor}; color: white;">{spotlightPlayers[2].tag}</div>
@@ -263,14 +290,14 @@
 
 			<!-- Column 2 -->
 			<div class="spotlight-col">
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
+				<div class="spotlight-card spotlight-mini group cursor-pointer" on:click={() => goto(`/${selectedRegion}/${spotlightPlayers[3].summonerName}/${spotlightPlayers[3].tagLine}`)}>
 					<img src={spotlightPlayers[3].splash} alt={spotlightPlayers[3].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
 						<div class="meta-tag" style="background: {spotlightPlayers[3].tagColor}; color: white;">{spotlightPlayers[3].tag}</div>
 						<div class="mini-name">{spotlightPlayers[3].summonerName}</div>
 					</div>
 				</div>
-				<div class="spotlight-card spotlight-mini group cursor-pointer">
+				<div class="spotlight-card spotlight-mini group cursor-pointer" on:click={() => goto(`/${selectedRegion}/${spotlightPlayers[4].summonerName}/${spotlightPlayers[4].tagLine}`)}>
 					<img src={spotlightPlayers[4].splash} alt={spotlightPlayers[4].summonerName} class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110">
 					<div class="mini-info">
 						<div class="meta-tag" style="background: {spotlightPlayers[4].tagColor}; color: white;">{spotlightPlayers[4].tag}</div>
@@ -358,7 +385,7 @@
 							{@const isExpanded = expandedRows.has(playerKey)}
 							<tr class="table-row" transition:fade={{ duration: 200 }}>
 								<td class="text-[#64748b] font-bold">{player.rank}</td>
-								<td>
+								<td class="cursor-pointer" on:click={() => goto(`/${selectedRegion}/${player.summonerName}/${player.tagLine}`)}>
 									<div class="col-champ">
 										<img src="https://ddragon.leagueoflegends.com/cdn/14.24.1/img/profileicon/{player.profileIconId}.png" alt={player.summonerName} width="40" height="40" style="border-radius: 50%;">
 										<div class="champ-text">
@@ -400,29 +427,48 @@
 							
 							<!-- Expanded row showing champions (for ALL players) -->
 							{#if isExpanded}
-								{@const championsToShow = loadedChampions.get(player.puuid) || player.topChampions}
+								{@const championsToShow = loadedChampions.get(player.puuid)}
+								{@const isLoading = loadingChampions.has(playerKey)}
 								{@const isRealData = loadedChampions.has(player.puuid)}
 								<tr class="expanded-row" transition:fade={{ duration: 200 }}>
 									<td colspan="7" style="padding: 1rem 2rem; background: rgba(10, 203, 230, 0.05);">
-										<div class="flex gap-3 items-center">
-											<span class="text-sm text-gray-400 font-semibold">
-												{isRealData ? '✅ Real Match History:' : 'Most Played Champions:'}
-											</span>
-											{#each championsToShow.slice(0, 5) as champKey}
-												{#if championNames[champKey]}
-													<div class="flex flex-col items-center gap-1">
-														<img 
-															src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${championNames[champKey].id}.png`, { width: 48 })}
-															alt={championNames[champKey].name}
-															width="48"
-															height="48"
-															class="rounded"
-														/>
-														<span class="text-xs text-gray-400">{championNames[champKey].name}</span>
-													</div>
-												{/if}
-											{/each}
-										</div>
+										{#if isLoading}
+											<!-- Loading State -->
+											<div class="flex gap-3 items-center">
+												<span class="text-sm text-gray-400 font-semibold">
+													⏳ Loading Match History...
+												</span>
+												<div class="w-6 h-6 border-2 border-[#0acbe6]/30 border-t-[#0acbe6] rounded-full animate-spin"></div>
+											</div>
+										{:else if isRealData && championsToShow}
+											<!-- Real Champions Loaded -->
+											<div class="flex gap-3 items-center">
+												<span class="text-sm text-gray-400 font-semibold">
+													✅ Real Match History:
+												</span>
+												{#each championsToShow.slice(0, 5) as champKey}
+													{#if championNames[champKey]}
+														<div class="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" on:click={() => goto(`/champion/${championNames[champKey].name}`)}>
+															<img 
+																src={optimizeRiotImage(`https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${championNames[champKey].id}.png`, { width: 48 })}
+																alt={championNames[champKey].name}
+																width="48"
+																height="48"
+																class="rounded"
+															/>
+															<span class="text-xs text-gray-400">{championNames[champKey].name}</span>
+														</div>
+													{/if}
+												{/each}
+											</div>
+										{:else}
+											<!-- Fallback (shouldn't happen often with pre-loading) -->
+											<div class="flex gap-3 items-center">
+												<span class="text-sm text-gray-400 font-semibold">
+													⏳ Loading...
+												</span>
+											</div>
+										{/if}
 									</td>
 								</tr>
 							{/if}

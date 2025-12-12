@@ -81,9 +81,15 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 		
 		// Step 1: Get PUUID from Riot ID
 		const accountUrl = `https://${routing}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
-		const accountRes = await fetch(accountUrl, {
-			headers: { 'X-Riot-Token': RIOT_API_KEY }
-		});
+		
+		let accountRes = await fetch(accountUrl, { headers: { 'X-Riot-Token': RIOT_API_KEY } });
+
+		// Retry logic for 429 (Rate Limit)
+		if (accountRes.status === 429) {
+			console.warn('⏳ Rate limit hit! Waiting 2 seconds...');
+			await new Promise(r => setTimeout(r, 2000));
+			accountRes = await fetch(accountUrl, { headers: { 'X-Riot-Token': RIOT_API_KEY } });
+		}
 
 		if (!accountRes.ok) {
 			if (accountRes.status === 404) {
@@ -98,15 +104,21 @@ export async function getSummonerByRiotId(gameName, tagLine, region = 'EUW') {
 		// ⚡ PARALLEL LOADING: Steps 2 & 3 can run simultaneously!
 		const platform = PLATFORM_IDS[region] || 'euw1';
 		
+		const fetchWithRetry = async (url) => {
+			let res = await fetch(url, { headers: { 'X-Riot-Token': RIOT_API_KEY } });
+			if (res.status === 429) {
+				console.warn(`⏳ Rate limit hit for ${url}! Waiting 2s...`);
+				await new Promise(r => setTimeout(r, 2000));
+				res = await fetch(url, { headers: { 'X-Riot-Token': RIOT_API_KEY } });
+			}
+			return res;
+		};
+
 		const [summonerRes, rankedRes] = await Promise.all([
 			// Step 2: Get Summoner data by PUUID
-			fetch(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`, {
-				headers: { 'X-Riot-Token': RIOT_API_KEY }
-			}),
+			fetchWithRetry(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`),
 			// Step 3: Get Ranked data (parallel!)
-			fetch(`https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`, {
-				headers: { 'X-Riot-Token': RIOT_API_KEY }
-			})
+			fetchWithRetry(`https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`)
 		]);
 
 		if (!summonerRes.ok) {

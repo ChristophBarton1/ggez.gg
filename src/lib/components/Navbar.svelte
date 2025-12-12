@@ -1,15 +1,25 @@
 <script>
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
-	
-	export let showSearchInNav = false;
+	import UnifiedSearch from '$lib/components/UnifiedSearch.svelte';
+	import { user } from '$lib/stores/user.js';
 	
 	let mobileMenuOpen = false;
 	let isPageFullscreen = false;
 	let loginOverlayOpen = false;
+	let registerMode = false;
 	let settingsOverlayOpen = false;
 	let showSaveToast = false;
+	let authError = '';
+	let authLoading = false;
+	
+	// Form fields
+	let username = '';
+	let email = '';
+	let password = '';
+	
+	// Get user from page data
+	export let data;
 	
 	// Settings (loaded from localStorage)
 	let darkMode = true;
@@ -18,6 +28,95 @@
 	let animationsEnabled = true;
 	let language = 'en';
 	
+	// Sync user from page data
+	$: if (data?.user) {
+		$user = data.user;
+	}
+
+	async function handleLogin(e) {
+		e.preventDefault();
+		authError = '';
+		authLoading = true;
+
+		try {
+			const res = await fetch('/api/auth/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ username, password })
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+				authError = data.error || 'Login failed';
+				return;
+			}
+
+			$user = data.user;
+			loginOverlayOpen = false;
+			username = '';
+			password = '';
+			window.location.reload();
+		} catch (error) {
+			authError = 'Connection error';
+		} finally {
+			authLoading = false;
+		}
+	}
+
+	async function handleRegister(e) {
+		e.preventDefault();
+		authError = '';
+		authLoading = true;
+
+		try {
+			const res = await fetch('/api/auth/register', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ username, email, password })
+			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+				authError = data.error || 'Registration failed';
+				return;
+			}
+
+			loginOverlayOpen = false;
+			username = '';
+			email = '';
+			password = '';
+			window.location.reload();
+		} catch (error) {
+			authError = 'Connection error';
+		} finally {
+			authLoading = false;
+		}
+	}
+
+	async function handleLogout() {
+		try {
+			await fetch('/api/auth/logout', { method: 'POST' });
+			$user = null;
+			window.location.reload();
+		} catch (error) {
+			console.error('Logout failed:', error);
+		}
+	}
+
+	function openLoginOverlay() {
+		loginOverlayOpen = true;
+		registerMode = false;
+		authError = '';
+	}
+
+	function openRegisterOverlay() {
+		loginOverlayOpen = true;
+		registerMode = true;
+		authError = '';
+	}
+
 	onMount(() => {
 		// Load settings from localStorage
 		const savedSettings = localStorage.getItem('ggez-settings');
@@ -112,14 +211,16 @@
 		<!-- Nav Links - ONLY VISIBLE ON DESKTOP -->
 		<div class="hidden md:flex items-center gap-2">
 			<a href="/" class="nav-link">Home</a>
+			<a href="/tierlist" class="nav-link">Tier List</a>
 			<a href="/champions" class="nav-link">Champions</a>
+			<a href="/leaderboards" class="nav-link">Leaderboards</a>
 		</div>
 	</div>
 	
 	<!-- Center Search (only on non-homepage) -->
-	{#if showSearchInNav && !isHomepage}
+	{#if !isHomepage}
 		<div class="hidden md:block flex-1 max-w-xl mx-8">
-			<SummonerSearch />
+			<UnifiedSearch showRegionSelector={false} placeholder="Search Summoner or Champion..." />
 		</div>
 	{/if}
 	
@@ -153,14 +254,28 @@
 		</button>
 		
 		<!-- User/Profile Icon (RIGHTMOST) -->
-		<button 
-			on:click={() => loginOverlayOpen = !loginOverlayOpen}
-			class="icon-btn" 
-			title="Login / Profile">
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-			</svg>
-		</button>
+		{#if $user}
+			<div class="flex items-center gap-3">
+				<span class="hidden md:block text-sm text-hex-gold font-semibold">{$user.username}</span>
+				<button 
+					on:click={handleLogout}
+					class="icon-btn" 
+					title="Logout">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+					</svg>
+				</button>
+			</div>
+		{:else}
+			<button 
+				on:click={openLoginOverlay}
+				class="icon-btn" 
+				title="Login / Profile">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+				</svg>
+			</button>
+		{/if}
 	</div>
 </nav>
 
@@ -189,9 +304,15 @@
 					</svg>
 					<span>Home</span>
 				</a>
+				<a href="/tierlist" on:click={() => mobileMenuOpen = false} class="mobile-menu-link">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+					</svg>
+					<span>Tier List</span>
+				</a>
 				<a href="/champions" on:click={() => mobileMenuOpen = false} class="mobile-menu-link">
 					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
 					</svg>
 					<span>Champions</span>
 				</a>
@@ -225,37 +346,69 @@
 				</svg>
 			</button>
 
-			<!-- Login Form -->
-			<h2 class="font-cinzel text-2xl text-hex-gold mb-6 text-center tracking-wider">LOGIN</h2>
+			<!-- Login/Register Form -->
+			<h2 class="font-cinzel text-2xl text-hex-gold mb-6 text-center tracking-wider">{registerMode ? 'REGISTER' : 'LOGIN'}</h2>
 			
-			<form class="space-y-4">
+			{#if authError}
+				<div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-4 text-sm">
+					{authError}
+				</div>
+			{/if}
+
+			<form class="space-y-4" on:submit={registerMode ? handleRegister : handleLogin}>
 				<div>
-					<label class="block text-sm text-gray-400 mb-2">Username</label>
+					<label for="username" class="block text-sm text-gray-400 mb-2">Username</label>
 					<input 
+						id="username"
 						type="text" 
+						bind:value={username}
 						placeholder="Enter your username"
+						required
 						class="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-hex-gold focus:outline-none transition-colors"
 					/>
 				</div>
 				
+				{#if registerMode}
 				<div>
-					<label class="block text-sm text-gray-400 mb-2">Password</label>
+					<label for="email" class="block text-sm text-gray-400 mb-2">Email</label>
 					<input 
+						id="email"
+						type="email" 
+						bind:value={email}
+						placeholder="Enter your email"
+						required
+						class="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-hex-gold focus:outline-none transition-colors"
+					/>
+				</div>
+				{/if}
+				
+				<div>
+					<label for="password" class="block text-sm text-gray-400 mb-2">Password</label>
+					<input 
+						id="password"
 						type="password" 
+						bind:value={password}
 						placeholder="Enter your password"
+						required
+						minlength="6"
 						class="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:border-hex-gold focus:outline-none transition-colors"
 					/>
 				</div>
 
 				<button 
 					type="submit"
-					class="w-full py-3 bg-hex-gold text-black font-bold rounded-lg hover:bg-white transition-all mt-6">
-					LOGIN
+					disabled={authLoading}
+					class="w-full py-3 bg-hex-gold text-black font-bold rounded-lg hover:bg-white transition-all mt-6 disabled:opacity-50 disabled:cursor-not-allowed">
+					{authLoading ? 'LOADING...' : (registerMode ? 'REGISTER' : 'LOGIN')}
 				</button>
 			</form>
 
 			<div class="text-center mt-4 text-sm text-gray-500">
-				Don't have an account? <button class="text-hex-gold hover:text-white transition-colors">Sign up</button>
+				{#if registerMode}
+					Already have an account? <button on:click={() => registerMode = false} class="text-hex-gold hover:text-white transition-colors">Login</button>
+				{:else}
+					Don't have an account? <button on:click={openRegisterOverlay} class="text-hex-gold hover:text-white transition-colors">Sign up</button>
+				{/if}
 			</div>
 		</div>
 	</div>

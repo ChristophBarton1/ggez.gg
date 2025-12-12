@@ -37,11 +37,11 @@ export function getChampionSplash(championName, skinNum = 0, width = 1920) {
 /**
  * Get optimized champion icon
  * @param {string} championName - Champion name
- * @param {number} size - Target size (default: 48)
+ * @param {number} size - Target size (default: 120)
  */
-export function getChampionIcon(championName, size = 48) {
-	const url = `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${championName}.png`;
-	return optimizeImage(url, { width: size, format: 'webp' });
+export function getChampionIcon(championName, size = 120) {
+	// Direct DDragon URL without proxy for crisp images
+	return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/${championName}.png`;
 }
 
 /**
@@ -49,9 +49,9 @@ export function getChampionIcon(championName, size = 48) {
  * @param {number} itemId - Item ID
  * @param {number} size - Target size (default: 30)
  */
-export function getItemIcon(itemId, size = 30) {
-	const url = `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png`;
-	return optimizeImage(url, { width: size, format: 'webp' });
+export function getItemIcon(itemId, size = 64) {
+	// Direct DDragon URL without proxy for crisp images
+	return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/item/${itemId}.png`;
 }
 
 /**
@@ -59,9 +59,9 @@ export function getItemIcon(itemId, size = 30) {
  * @param {string} spellName - Spell name (e.g., 'SummonerFlash')
  * @param {number} size - Target size (default: 30)
  */
-export function getSummonerSpellIcon(spellName, size = 30) {
-	const url = `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/spell/${spellName}.png`;
-	return optimizeImage(url, { width: size, format: 'webp' });
+export function getSummonerSpellIcon(spellName, size = 48) {
+	// Direct DDragon URL without proxy for crisp images
+	return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/spell/${spellName}.png`;
 }
 
 /**
@@ -70,8 +70,8 @@ export function getSummonerSpellIcon(spellName, size = 30) {
  * @param {number} size - Target size (default: 96)
  */
 export function getProfileIcon(iconId, size = 96) {
-	const url = `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${iconId}.png`;
-	return optimizeImage(url, { width: size, format: 'webp' });
+	// Direct DDragon URL without proxy for crisp images
+	return `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/profileicon/${iconId}.png`;
 }
 
 /**

@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
-	import SummonerSearch from '$lib/components/SummonerSearch.svelte';
+	import UnifiedSearch from '$lib/components/UnifiedSearch.svelte';
 
 	let showVideo = false;
 	let videoReady = false;
@@ -216,13 +216,13 @@
 				</h1>
 				
 				<!-- Subtitle -->
-				<div class="text-sm sm:text-base md:text-base text-hex-blue mb-2 md:mb-3 tracking-[1px] md:tracking-[2px] uppercase text-center">
-					Lightning-Fast Summoner Analytics
+				<div class="text-sm sm:text-base md:text-base text-hex-blue mb-4 md:mb-6 tracking-[1px] md:tracking-[2px] uppercase text-center">
+					Lightning-Fast Summoner & Champion Search
 				</div>
 				
-				<!-- Search Bar -->
+				<!-- Unified Search Bar -->
 				<div class="w-full max-w-2xl mb-3 md:mb-4">
-					<SummonerSearch />
+					<UnifiedSearch />
 				</div>
 			</div>
 

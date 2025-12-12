@@ -1,10 +1,27 @@
 import { json } from '@sveltejs/kit';
-import { lucia } from '$lib/server/auth.js';
-import { db } from '$lib/server/db.js';
-import { hash } from 'bcryptjs';
-import { generateId } from 'lucia';
+
+let lucia, db, hash, generateId;
+try {
+	const authModule = await import('$lib/server/auth.js');
+	const dbModule = await import('$lib/server/db.js');
+	const bcryptModule = await import('bcryptjs');
+	const luciaModule = await import('lucia');
+	lucia = authModule.lucia;
+	db = dbModule.db;
+	hash = bcryptModule.hash;
+	generateId = luciaModule.generateId;
+} catch (err) {
+	console.error('Auth system not configured:', err.message);
+}
 
 export async function POST({ request, cookies }) {
+	// Check if auth is available
+	if (!lucia || !db) {
+		return json({ 
+			error: 'Authentication system not configured. Please contact administrator.' 
+		}, { status: 503 });
+	}
+
 	try {
 		const { username, email, password } = await request.json();
 

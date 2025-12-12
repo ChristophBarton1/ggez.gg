@@ -1,11 +1,18 @@
 import { createClient } from '@libsql/client';
 import { dev } from '$app/environment';
+import { env } from '$env/dynamic/private';
 
 // Environment variables für Turso oder lokale SQLite
-const url = dev ? 'file:local.db' : process.env.TURSO_DATABASE_URL || 'file:local.db';
+const url = dev ? 'file:local.db' : (env.TURSO_DATABASE_URL || 'file:local.db');
 // Strip "Bearer " prefix if present (common mistake when copying from Turso dashboard)
-const rawToken = dev ? undefined : process.env.TURSO_AUTH_TOKEN;
+const rawToken = dev ? undefined : env.TURSO_AUTH_TOKEN;
 const authToken = rawToken?.startsWith('Bearer ') ? rawToken.slice(7) : rawToken;
+
+console.log('🔧 Database config:', {
+	url: url?.substring(0, 30) + '...',
+	hasToken: !!authToken,
+	tokenStart: authToken?.substring(0, 20) + '...'
+});
 
 export const db = createClient({
 	url,

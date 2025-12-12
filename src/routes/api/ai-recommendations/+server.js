@@ -4,7 +4,7 @@
  */
 
 import { json } from '@sveltejs/kit';
-import { OPENAI_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 // Common item IDs for reference
 const ITEM_DATABASE = {
@@ -114,6 +114,8 @@ export async function POST({ request }) {
 	try {
 		const { gameData, summonerPuuid } = await request.json();
 
+		const OPENAI_API_KEY = env.OPENAI_API_KEY;
+		
 		if (!OPENAI_API_KEY) {
 			return json({
 				success: false,

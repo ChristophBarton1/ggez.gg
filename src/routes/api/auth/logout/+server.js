@@ -1,16 +1,24 @@
 import { json } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 
 export async function POST({ locals, cookies }) {
-	// Dynamic import inside function to avoid serverless crashes
+	// Check env vars FIRST
+	if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
+		return json({ 
+			error: 'Logout failed. Database not configured.' 
+		}, { status: 503 });
+	}
+
+	// Only import if env is configured
 	let lucia;
 	try {
 		const authModule = await import('$lib/server/auth.js');
 		lucia = authModule.lucia;
 	} catch (err) {
-		console.error('Auth system not available:', err.message);
+		console.error('❌ Auth import failed:', err);
 		return json({ 
-			error: 'Authentication system not configured.' 
-		}, { status: 503 });
+			error: 'Logout failed. Please try again.' 
+		}, { status: 500 });
 	}
 
 	try {

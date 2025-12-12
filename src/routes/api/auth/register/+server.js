@@ -1,7 +1,16 @@
 import { json } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 
 export async function POST({ request, cookies }) {
-	// Dynamic imports inside function to avoid serverless crashes
+	// Check env vars FIRST before any imports
+	if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
+		console.warn('⚠️ Turso database not configured');
+		return json({ 
+			error: 'Registration is currently disabled. Database not configured.' 
+		}, { status: 503 });
+	}
+
+	// Only import if env is configured
 	let lucia, db, hash, generateId;
 	try {
 		const [authModule, dbModule, bcryptModule, luciaModule] = await Promise.all([
@@ -15,10 +24,10 @@ export async function POST({ request, cookies }) {
 		hash = bcryptModule.hash;
 		generateId = luciaModule.generateId;
 	} catch (err) {
-		console.error('Auth system not available:', err.message);
+		console.error('❌ Auth import failed:', err);
 		return json({ 
-			error: 'Authentication system not configured. Please add Turso database credentials.' 
-		}, { status: 503 });
+			error: 'Authentication system error. Please try again later.' 
+		}, { status: 500 });
 	}
 
 	try {

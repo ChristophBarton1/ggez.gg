@@ -2,35 +2,56 @@
 import { lucia } from '$lib/server/auth.js';
 import { initDB } from '$lib/server/db.js';
 
-// Initialize database on startup
+// Lazy DB initialization for serverless
 let dbInitialized = false;
-if (!dbInitialized) {
-	await initDB();
-	dbInitialized = true;
+let dbInitPromise = null;
+
+async function ensureDBInitialized() {
+	if (dbInitialized) return;
+	if (dbInitPromise) return dbInitPromise;
+	
+	dbInitPromise = initDB().then(() => {
+		dbInitialized = true;
+		console.log('✅ Database initialized');
+	}).catch(err => {
+		console.warn('⚠️ Database init failed (auth disabled):', err.message);
+		// Don't throw - allow app to work without auth
+	});
+	
+	return dbInitPromise;
 }
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
-	// Auth middleware
-	const sessionId = event.cookies.get(lucia.sessionCookieName);
-	if (sessionId) {
-		const { session, user } = await lucia.validateSession(sessionId);
-		if (session && session.fresh) {
-			const sessionCookie = lucia.createSessionCookie(session.id);
-			event.cookies.set(sessionCookie.name, sessionCookie.value, {
-				path: '.',
-				...sessionCookie.attributes
-			});
+	// Auth middleware (lazy init, error-tolerant)
+	try {
+		await ensureDBInitialized();
+		
+		const sessionId = event.cookies.get(lucia.sessionCookieName);
+		if (sessionId) {
+			const { session, user } = await lucia.validateSession(sessionId);
+			if (session && session.fresh) {
+				const sessionCookie = lucia.createSessionCookie(session.id);
+				event.cookies.set(sessionCookie.name, sessionCookie.value, {
+					path: '.',
+					...sessionCookie.attributes
+				});
+			}
+			if (!session) {
+				const sessionCookie = lucia.createBlankSessionCookie();
+				event.cookies.set(sessionCookie.name, sessionCookie.value, {
+					path: '.',
+					...sessionCookie.attributes
+				});
+			}
+			event.locals.user = user;
+			event.locals.session = session;
 		}
-		if (!session) {
-			const sessionCookie = lucia.createBlankSessionCookie();
-			event.cookies.set(sessionCookie.name, sessionCookie.value, {
-				path: '.',
-				...sessionCookie.attributes
-			});
-		}
-		event.locals.user = user;
-		event.locals.session = session;
+	} catch (error) {
+		// Auth failed - continue without auth
+		console.warn('⚠️ Auth middleware error:', error.message);
+		event.locals.user = null;
+		event.locals.session = null;
 	}
 	const response = await resolve(event, {
 		// Enable HTTP/2 Server Push for critical resources

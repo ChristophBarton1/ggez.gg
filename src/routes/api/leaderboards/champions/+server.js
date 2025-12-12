@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { RIOT_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 // Cache for individual player champions (1 hour TTL)
 const championCache = new Map();
@@ -80,6 +80,7 @@ async function getTopChampions(puuid, regional, apiKey) {
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET({ url }) {
+	const RIOT_API_KEY = env.RIOT_API_KEY;
 	const puuid = url.searchParams.get('puuid');
 	const region = url.searchParams.get('region') || 'euw';
 	

@@ -3,7 +3,7 @@
  */
 
 import { json } from '@sveltejs/kit';
-import { RIOT_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 const REGION_MAP = {
 	'NA': 'na1',
@@ -31,6 +31,7 @@ export async function GET({ params, url }) {
 	const platformId = REGION_MAP[region.toUpperCase()] || 'euw1';
 
 	// 1. Check API Key
+	const RIOT_API_KEY = env.RIOT_API_KEY;
 	if (!RIOT_API_KEY) {
 		console.error('❌ API Error: RIOT_API_KEY is missing in server environment!');
 		return json({ error: 'Server configuration error' }, { status: 500 });

@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { RIOT_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 // Simple in-memory cache (1 hour TTL)
 // Note: Cache is cleared on server restart
@@ -43,6 +43,7 @@ export async function GET({ url }) {
 	}
 
 	// Debug: Check if API key is loaded
+	const RIOT_API_KEY = env.RIOT_API_KEY;
 	console.log('🔑 API Key loaded:', RIOT_API_KEY ? `${RIOT_API_KEY.substring(0, 15)}...` : 'NOT FOUND');
 	console.log('🌍 Platform:', platform, '| Regional:', regional);
 	console.log('⏰ Request time:', new Date().toLocaleTimeString());

@@ -3,7 +3,9 @@ import { dev } from '$app/environment';
 
 // Environment variables für Turso oder lokale SQLite
 const url = dev ? 'file:local.db' : process.env.TURSO_DATABASE_URL || 'file:local.db';
-const authToken = dev ? undefined : process.env.TURSO_AUTH_TOKEN;
+// Strip "Bearer " prefix if present (common mistake when copying from Turso dashboard)
+const rawToken = dev ? undefined : process.env.TURSO_AUTH_TOKEN;
+const authToken = rawToken?.startsWith('Bearer ') ? rawToken.slice(7) : rawToken;
 
 export const db = createClient({
 	url,

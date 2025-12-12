@@ -1,24 +1,23 @@
 import { json } from '@sveltejs/kit';
 
-let lucia, db, hash, generateId;
-try {
-	const authModule = await import('$lib/server/auth.js');
-	const dbModule = await import('$lib/server/db.js');
-	const bcryptModule = await import('bcryptjs');
-	const luciaModule = await import('lucia');
-	lucia = authModule.lucia;
-	db = dbModule.db;
-	hash = bcryptModule.hash;
-	generateId = luciaModule.generateId;
-} catch (err) {
-	console.error('Auth system not configured:', err.message);
-}
-
 export async function POST({ request, cookies }) {
-	// Check if auth is available
-	if (!lucia || !db) {
+	// Dynamic imports inside function to avoid serverless crashes
+	let lucia, db, hash, generateId;
+	try {
+		const [authModule, dbModule, bcryptModule, luciaModule] = await Promise.all([
+			import('$lib/server/auth.js'),
+			import('$lib/server/db.js'),
+			import('bcryptjs'),
+			import('lucia')
+		]);
+		lucia = authModule.lucia;
+		db = dbModule.db;
+		hash = bcryptModule.hash;
+		generateId = luciaModule.generateId;
+	} catch (err) {
+		console.error('Auth system not available:', err.message);
 		return json({ 
-			error: 'Authentication system not configured. Please contact administrator.' 
+			error: 'Authentication system not configured. Please add Turso database credentials.' 
 		}, { status: 503 });
 	}
 

@@ -1,16 +1,13 @@
 import { json } from '@sveltejs/kit';
 
-let lucia;
-try {
-	const authModule = await import('$lib/server/auth.js');
-	lucia = authModule.lucia;
-} catch (err) {
-	console.error('Auth system not configured:', err.message);
-}
-
 export async function POST({ locals, cookies }) {
-	// Check if auth is available
-	if (!lucia) {
+	// Dynamic import inside function to avoid serverless crashes
+	let lucia;
+	try {
+		const authModule = await import('$lib/server/auth.js');
+		lucia = authModule.lucia;
+	} catch (err) {
+		console.error('Auth system not available:', err.message);
 		return json({ 
 			error: 'Authentication system not configured.' 
 		}, { status: 503 });

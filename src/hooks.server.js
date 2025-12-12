@@ -1,12 +1,26 @@
 // ⚡ SERVER-SIDE PERFORMANCE OPTIMIZATIONS
-import { lucia } from '$lib/server/auth.js';
-import { initDB } from '$lib/server/db.js';
+
+// Dynamic auth imports - fail gracefully if auth not available
+let lucia = null;
+let initDB = null;
+let authAvailable = false;
+
+try {
+	const authModule = await import('$lib/server/auth.js');
+	const dbModule = await import('$lib/server/db.js');
+	lucia = authModule.lucia;
+	initDB = dbModule.initDB;
+	authAvailable = true;
+} catch (err) {
+	console.warn('⚠️ Auth system not available:', err.message);
+}
 
 // Lazy DB initialization for serverless
 let dbInitialized = false;
 let dbInitPromise = null;
 
 async function ensureDBInitialized() {
+	if (!authAvailable || !initDB) return;
 	if (dbInitialized) return;
 	if (dbInitPromise) return dbInitPromise;
 	
@@ -14,8 +28,7 @@ async function ensureDBInitialized() {
 		dbInitialized = true;
 		console.log('✅ Database initialized');
 	}).catch(err => {
-		console.warn('⚠️ Database init failed (auth disabled):', err.message);
-		// Don't throw - allow app to work without auth
+		console.warn('⚠️ Database init failed:', err.message);
 	});
 	
 	return dbInitPromise;
@@ -23,35 +36,38 @@ async function ensureDBInitialized() {
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
-	// Auth middleware (lazy init, error-tolerant)
-	try {
-		await ensureDBInitialized();
-		
-		const sessionId = event.cookies.get(lucia.sessionCookieName);
-		if (sessionId) {
-			const { session, user } = await lucia.validateSession(sessionId);
-			if (session && session.fresh) {
-				const sessionCookie = lucia.createSessionCookie(session.id);
-				event.cookies.set(sessionCookie.name, sessionCookie.value, {
-					path: '.',
-					...sessionCookie.attributes
-				});
+	// Set defaults
+	event.locals.user = null;
+	event.locals.session = null;
+
+	// Auth middleware (completely optional)
+	if (authAvailable && lucia) {
+		try {
+			await ensureDBInitialized();
+			
+			const sessionId = event.cookies.get(lucia.sessionCookieName);
+			if (sessionId) {
+				const { session, user } = await lucia.validateSession(sessionId);
+				if (session && session.fresh) {
+					const sessionCookie = lucia.createSessionCookie(session.id);
+					event.cookies.set(sessionCookie.name, sessionCookie.value, {
+						path: '.',
+						...sessionCookie.attributes
+					});
+				}
+				if (!session) {
+					const sessionCookie = lucia.createBlankSessionCookie();
+					event.cookies.set(sessionCookie.name, sessionCookie.value, {
+						path: '.',
+						...sessionCookie.attributes
+					});
+				}
+				event.locals.user = user;
+				event.locals.session = session;
 			}
-			if (!session) {
-				const sessionCookie = lucia.createBlankSessionCookie();
-				event.cookies.set(sessionCookie.name, sessionCookie.value, {
-					path: '.',
-					...sessionCookie.attributes
-				});
-			}
-			event.locals.user = user;
-			event.locals.session = session;
+		} catch (error) {
+			console.warn('⚠️ Auth error:', error.message);
 		}
-	} catch (error) {
-		// Auth failed - continue without auth
-		console.warn('⚠️ Auth middleware error:', error.message);
-		event.locals.user = null;
-		event.locals.session = null;
 	}
 	const response = await resolve(event, {
 		// Enable HTTP/2 Server Push for critical resources

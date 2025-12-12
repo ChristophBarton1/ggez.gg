@@ -69,6 +69,8 @@
 		authError = '';
 		authLoading = true;
 
+		console.log('🔵 Starting registration...', { username, email });
+
 		try {
 			const res = await fetch('/api/auth/register', {
 				method: 'POST',
@@ -76,20 +78,31 @@
 				body: JSON.stringify({ username, email, password })
 			});
 
+			console.log('🔵 Response status:', res.status, res.statusText);
+
 			const data = await res.json();
+			console.log('🔵 Response data:', data);
 
 			if (!res.ok) {
+				console.error('❌ Registration failed:', data.error);
 				authError = data.error || 'Registration failed';
 				return;
 			}
 
+			console.log('✅ Registration successful!');
+			alert('Registration successful! Logging you in...');
+			
 			loginOverlayOpen = false;
 			username = '';
 			email = '';
 			password = '';
-			window.location.reload();
+			
+			setTimeout(() => {
+				window.location.reload();
+			}, 500);
 		} catch (error) {
-			authError = 'Connection error';
+			console.error('❌ Registration error:', error);
+			authError = 'Connection error: ' + error.message;
 		} finally {
 			authLoading = false;
 		}

@@ -4,6 +4,18 @@
   import { page } from '$app/stores';
   import Navbar from '$lib/components/Navbar.svelte';
 
+  export let data;
+
+  // DEBUG: Log user data on every page load
+  $: {
+    console.log('🔍 Layout data:', {
+      hasUser: !!data?.user,
+      username: data?.user?.username,
+      userId: data?.user?.id,
+      pathname: $page.url.pathname
+    });
+  }
+
   // ⚡ PERFORMANCE FIX: Service Worker temporarily disabled due to corruption issues
   // TODO: Re-implement with proper Workbox or modern caching strategy
   onMount(() => {
@@ -24,7 +36,7 @@
 
 <!-- Global Navbar on all pages except legal pages -->
 {#if !isLegalPage}
-  <Navbar showSearchInNav={!isHomepage} />
+  <Navbar {data} showSearchInNav={!isHomepage} />
 {/if}
 
 <!-- Page Content with automatic padding for fixed navbar -->

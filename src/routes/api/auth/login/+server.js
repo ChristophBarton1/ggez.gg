@@ -57,7 +57,7 @@ export async function POST({ request, cookies }) {
 		const sessionCookie = lucia.createSessionCookie(session.id);
 		
 		cookies.set(sessionCookie.name, sessionCookie.value, {
-			path: '.',
+			path: '/',
 			...sessionCookie.attributes
 		});
 

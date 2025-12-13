@@ -64,7 +64,7 @@ export async function handle({ event, resolve }) {
 				if (session && session.fresh) {
 					const sessionCookie = lucia.createSessionCookie(session.id);
 					event.cookies.set(sessionCookie.name, sessionCookie.value, {
-						path: '.',
+						path: '/',
 						...sessionCookie.attributes
 					});
 				}
@@ -72,7 +72,7 @@ export async function handle({ event, resolve }) {
 					console.log('❌ Session invalid - clearing cookie');
 					const sessionCookie = lucia.createBlankSessionCookie();
 					event.cookies.set(sessionCookie.name, sessionCookie.value, {
-						path: '.',
+						path: '/',
 						...sessionCookie.attributes
 					});
 				}

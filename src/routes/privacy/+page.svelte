@@ -21,20 +21,24 @@
 				<div class="bg-white/5 p-6 rounded-lg backdrop-blur-sm border border-white/10">
 					<p class="mb-4 leading-relaxed">
 						GGEZ.GG uses publicly available data from the Riot Games API to display League of Legends statistics. 
-						We do not collect or store personal information beyond what is necessary to provide our service.
+						We collect and store only the minimum data necessary to provide our service.
 					</p>
 					<ul class="space-y-2 text-sm">
 						<li class="flex items-start gap-2">
 							<span class="text-hex-gold mt-1">✓</span>
-							<span>Summoner names and game statistics (public data from Riot Games API)</span>
+							<span><strong>Account Data:</strong> Username, email, encrypted password (für registrierte User)</span>
 						</li>
 						<li class="flex items-start gap-2">
 							<span class="text-hex-gold mt-1">✓</span>
-							<span>Match history and performance data (public data)</span>
+							<span><strong>Riot Account:</strong> Game Name, Tag Line, PUUID (wenn verknüpft)</span>
 						</li>
 						<li class="flex items-start gap-2">
 							<span class="text-hex-gold mt-1">✓</span>
-							<span>Temporary session data for improved user experience</span>
+							<span><strong>Game Statistics:</strong> Summoner data, match history (öffentliche Riot API Daten)</span>
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="text-hex-gold mt-1">✓</span>
+							<span><strong>Session Data:</strong> Login-Sessions für Authentication</span>
 						</li>
 					</ul>
 				</div>
@@ -44,9 +48,11 @@
 				<h2 class="text-2xl font-bold text-white mb-4">How We Use Your Data</h2>
 				<div class="bg-white/5 p-6 rounded-lg backdrop-blur-sm border border-white/10">
 					<ul class="space-y-3 text-sm leading-relaxed">
-						<li><strong class="text-white">Display Statistics:</strong> Show your League of Legends performance and match history</li>
-						<li><strong class="text-white">Improve Service:</strong> Analyze usage patterns to enhance user experience</li>
-						<li><strong class="text-white">AI Features:</strong> Process game data to provide AI-powered recommendations (if applicable)</li>
+						<li><strong class="text-white">Authentication:</strong> Sichere Login-Funktionalität und Session-Management</li>
+						<li><strong class="text-white">Personal Dashboard:</strong> Anzeige deiner persönlichen Riot Account Stats</li>
+						<li><strong class="text-white">Display Statistics:</strong> League of Legends Performance und Match History</li>
+						<li><strong class="text-white">Improve Service:</strong> Analyse von Nutzungsmustern für bessere User Experience</li>
+						<li><strong class="text-white">AI Features:</strong> Verarbeitung von Spieldaten für KI-gestützte Empfehlungen</li>
 					</ul>
 				</div>
 			</section>
@@ -55,22 +61,50 @@
 				<h2 class="text-2xl font-bold text-white mb-4">Cookies & Local Storage</h2>
 				<div class="bg-white/5 p-6 rounded-lg backdrop-blur-sm border border-white/10">
 					<p class="mb-4 leading-relaxed">
-						We use minimal cookies and local storage to:
+						Wir verwenden Cookies und Local Storage für folgende Zwecke:
 					</p>
-					<ul class="space-y-2 text-sm">
-						<li class="flex items-start gap-2">
-							<span class="text-hex-gold mt-1">•</span>
-							<span>Remember your recently searched summoners</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<span class="text-hex-gold mt-1">•</span>
-							<span>Save your preferences (region, theme, etc.)</span>
-						</li>
-						<li class="flex items-start gap-2">
-							<span class="text-hex-gold mt-1">•</span>
-							<span>Improve site performance and loading times</span>
-						</li>
-					</ul>
+					
+					<div class="space-y-3 text-sm">
+						<div class="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+							<strong class="text-green-400">Notwendige Cookies (Essential):</strong>
+							<ul class="mt-2 space-y-1 ml-4">
+								<li class="flex items-start gap-2">
+									<span class="text-green-400 mt-1">•</span>
+									<span><strong>Session Cookies:</strong> Login-Status und Authentifizierung</span>
+								</li>
+								<li class="flex items-start gap-2">
+									<span class="text-green-400 mt-1">•</span>
+									<span><strong>Security:</strong> CSRF-Schutz und Session-Validierung</span>
+								</li>
+								<li class="flex items-start gap-2">
+									<span class="text-green-400 mt-1">•</span>
+									<span><strong>Cookie Consent:</strong> Speicherung deiner Cookie-Präferenzen</span>
+								</li>
+							</ul>
+						</div>
+						
+						<div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+							<strong class="text-blue-400">Funktionale Cookies (Optional):</strong>
+							<ul class="mt-2 space-y-1 ml-4">
+								<li class="flex items-start gap-2">
+									<span class="text-blue-400 mt-1">•</span>
+									<span>Letzte Summoner-Suchen</span>
+								</li>
+								<li class="flex items-start gap-2">
+									<span class="text-blue-400 mt-1">•</span>
+									<span>Einstellungen (Region, Theme, etc.)</span>
+								</li>
+								<li class="flex items-start gap-2">
+									<span class="text-blue-400 mt-1">•</span>
+									<span>Performance-Optimierung</span>
+								</li>
+							</ul>
+						</div>
+					</div>
+					
+					<p class="mt-4 text-xs text-gray-400">
+						Du kannst deine Cookie-Einstellungen jederzeit über den Cookie-Banner ändern.
+					</p>
 				</div>
 			</section>
 
@@ -80,11 +114,15 @@
 					<div class="space-y-4 text-sm leading-relaxed">
 						<div>
 							<strong class="text-white">Riot Games API:</strong>
-							<p class="text-gray-400 mt-1">We use the official Riot Games API to fetch game data. This data is publicly available.</p>
+							<p class="text-gray-400 mt-1">Offizielle Riot Games API für Spieldaten (öffentlich verfügbar)</p>
+						</div>
+						<div>
+							<strong class="text-white">Turso Database:</strong>
+							<p class="text-gray-400 mt-1">Sichere Speicherung von User-Accounts und Sessions (libSQL, DSGVO-konform)</p>
 						</div>
 						<div>
 							<strong class="text-white">Hosting Provider:</strong>
-							<p class="text-gray-400 mt-1">Our service is hosted on Vercel. Please refer to Vercel's privacy policy for hosting-related data handling.</p>
+							<p class="text-gray-400 mt-1">Vercel (EU-Region) - Siehe Vercel Privacy Policy für Details</p>
 						</div>
 					</div>
 				</div>
@@ -120,7 +158,34 @@
 			</section>
 
 			<section>
-				<p class="text-sm text-gray-500 italic">Last updated: December 2024</p>
+				<h2 class="text-2xl font-bold text-white mb-4">DSGVO / GDPR Compliance</h2>
+				<div class="bg-white/5 p-6 rounded-lg backdrop-blur-sm border border-white/10">
+					<p class="mb-4 text-sm leading-relaxed">
+						Wir halten uns an die EU-Datenschutz-Grundverordnung (DSGVO). Deine Daten werden:
+					</p>
+					<ul class="space-y-2 text-sm">
+						<li class="flex items-start gap-2">
+							<span class="text-hex-gold mt-1">✓</span>
+							<span>Nur in der EU gespeichert (Turso EU Database)</span>
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="text-hex-gold mt-1">✓</span>
+							<span>Mit modernster Verschlüsselung geschützt</span>
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="text-hex-gold mt-1">✓</span>
+							<span>Niemals an Dritte verkauft oder weitergegeben</span>
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="text-hex-gold mt-1">✓</span>
+							<span>Können jederzeit gelöscht werden (Kontakt: privacy@ggez.gg)</span>
+						</li>
+					</ul>
+				</div>
+			</section>
+
+			<section>
+				<p class="text-sm text-gray-500 italic">Letzte Aktualisierung: 13. Dezember 2024</p>
 			</section>
 		</div>
 

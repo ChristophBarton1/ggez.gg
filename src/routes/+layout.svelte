@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import Navbar from '$lib/components/Navbar.svelte';
+  import CookieBanner from '$lib/components/CookieBanner.svelte';
 
   export let data;
 
@@ -43,6 +44,9 @@
 <div class="page-wrapper" class:has-navbar={!isLegalPage} class:is-homepage={isHomepage}>
   <slot />
 </div>
+
+<!-- GDPR Cookie Banner -->
+<CookieBanner />
 
 <style>
   /* Automatic padding for ALL pages with navbar (except homepage) */

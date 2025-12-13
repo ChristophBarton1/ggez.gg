@@ -43,6 +43,12 @@ export async function load({ locals }) {
 			)
 		);
 
+		console.log('✅ Dashboard data loaded:', {
+			ranked: rankedData.length,
+			matches: matchDetails.filter(m => m !== null).length,
+			masteries: masteryData.length
+		});
+		
 		return {
 			user: locals.user,
 			ranked: rankedData,

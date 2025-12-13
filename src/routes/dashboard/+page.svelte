@@ -1,11 +1,23 @@
 <script>
 	import { fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
+	import { onMount } from 'svelte';
 	
 	export let data;
 	
-	$: soloQueue = data.ranked.find(r => r.queueType === 'RANKED_SOLO_5x5');
-	$: flexQueue = data.ranked.find(r => r.queueType === 'RANKED_FLEX_SR');
+	onMount(() => {
+		console.log('🎮 Dashboard loaded!');
+		console.log('📊 Data:', {
+			user: data.user?.riot_game_name,
+			ranked: data.ranked?.length,
+			matches: data.matches?.length,
+			masteries: data.masteries?.length,
+			error: data.error
+		});
+	});
+	
+	$: soloQueue = data.ranked?.find(r => r.queueType === 'RANKED_SOLO_5x5');
+	$: flexQueue = data.ranked?.find(r => r.queueType === 'RANKED_FLEX_SR');
 	
 	function getRankColor(tier) {
 		const colors = {

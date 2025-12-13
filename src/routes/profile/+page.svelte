@@ -117,6 +117,7 @@
 					<div>
 						<p class="text-green-400 font-semibold mb-2">✓ Account Verknüpft</p>
 						<p class="text-2xl font-bold text-white">{data.user.riot_game_name}#{data.user.riot_tag_line}</p>
+						<p class="text-xs text-gray-500 mt-2 font-mono">PUUID: {data.user.riot_puuid?.substring(0, 20)}...</p>
 					</div>
 					<button 
 						on:click={handleUnlink}

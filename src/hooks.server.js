@@ -46,8 +46,21 @@ export async function handle({ event, resolve }) {
 			await ensureDBInitialized();
 			
 			const sessionId = event.cookies.get(lucia.sessionCookieName);
+			console.log('🔍 Session check:', { 
+				hasSessionId: !!sessionId, 
+				sessionIdLength: sessionId?.length,
+				cookieName: lucia.sessionCookieName 
+			});
+			
 			if (sessionId) {
 				const { session, user } = await lucia.validateSession(sessionId);
+				console.log('🔍 Session validation:', { 
+					hasSession: !!session, 
+					hasUser: !!user,
+					userId: user?.id,
+					username: user?.username
+				});
+				
 				if (session && session.fresh) {
 					const sessionCookie = lucia.createSessionCookie(session.id);
 					event.cookies.set(sessionCookie.name, sessionCookie.value, {
@@ -56,6 +69,7 @@ export async function handle({ event, resolve }) {
 					});
 				}
 				if (!session) {
+					console.log('❌ Session invalid - clearing cookie');
 					const sessionCookie = lucia.createBlankSessionCookie();
 					event.cookies.set(sessionCookie.name, sessionCookie.value, {
 						path: '.',
@@ -66,7 +80,7 @@ export async function handle({ event, resolve }) {
 				event.locals.session = session;
 			}
 		} catch (error) {
-			console.warn('⚠️ Auth error:', error.message);
+			console.error('❌ Auth error in hooks:', error);
 		}
 	}
 	const response = await resolve(event, {
